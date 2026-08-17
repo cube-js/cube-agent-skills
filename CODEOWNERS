@@ -1,0 +1,9 @@
+# Code owners for cube-agent-skills.
+#
+# TODO(before the repo goes public): name the owning team and uncomment. Left
+# commented rather than filled with a guess — a CODEOWNERS entry pointing at a
+# team that does not exist silently reviews nothing, which is worse than
+# having no file at all.
+#
+# *        @cube-js/<team>
+# skills/  @cube-js/<team>

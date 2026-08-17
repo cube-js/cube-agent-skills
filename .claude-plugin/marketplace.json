@@ -1,0 +1,13 @@
+{
+  "name": "cube",
+  "url": "https://github.com/cube-js/cube-agent-skills",
+  "plugins": [
+    {
+      "name": "cube",
+      "displayName": "Cube",
+      "description": "Operate Cube from your coding agent — explore and build the semantic model, manage workbooks and dashboards, run queries, administer access, and ship deployments.",
+      "version": "0.1.0",
+      "source": "./"
+    }
+  ]
+}

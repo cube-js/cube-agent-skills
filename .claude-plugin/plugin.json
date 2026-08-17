@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "cube",
+  "displayName": "Cube",
+  "version": "0.1.0",
+  "description": "Operate Cube from your coding agent — explore and build the semantic model, manage workbooks and dashboards, run queries, administer access, and ship deployments, all through the Cube CLI.",
+  "author": {
+    "name": "Cube Dev, Inc.",
+    "url": "https://cube.dev"
+  },
+  "homepage": "https://docs.cube.dev/docs/integrations/agent-skills",
+  "repository": "https://github.com/cube-js/cube-agent-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "cube",
+    "semantic-layer",
+    "analytics",
+    "data-modeling",
+    "business-intelligence",
+    "cli"
+  ]
+}

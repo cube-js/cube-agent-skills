@@ -1,0 +1,41 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Static validation only, by design. Driving these skills end to end needs a
+# live Cube tenant, and this is a public repository — tenant credentials do
+# not belong in its Actions secrets. Smoke tests are run by hand before each
+# release; see CONTRIBUTING.md.
+jobs:
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate skill frontmatter
+        run: python3 scripts/validate-skills.py
+
+      - name: Validate plugin manifests are well-formed JSON
+        run: |
+          python3 -m json.tool .claude-plugin/plugin.json > /dev/null
+          python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
+
+      - name: Cross-check against the reference implementation
+        # skills-ref is not published to PyPI — it installs from source, so an
+        # upstream move breaks this step and not the gate above. Allowed to
+        # fail on purpose; scripts/validate-skills.py is the real check.
+        continue-on-error: true
+        run: |
+          git clone --depth 1 https://github.com/agentskills/agentskills /tmp/agentskills
+          pip install -e /tmp/agentskills/skills-ref
+          for skill in skills/*/; do
+            echo "== $skill"
+            skills-ref validate "$skill"
+          done
