@@ -1,6 +1,7 @@
 ---
 name: cube-admin
-description: Administer a Cube tenant — users, groups, user attributes, access policies, tenant settings, API keys, SCIM provisioning and OIDC — using the Cube CLI. Use whenever someone wants to manage who can access what: add or remove a user, create a group, grant or revoke access to a deployment or resource, set user attributes for row-level security, configure SSO, rotate an API key, or audit current permissions. Triggers on "add someone to", "give access to", "who can see", "remove this user", "set up SSO", "create an API key", "what are this user's permissions", "audit access". To manage deployments themselves use cube-deploy; for embedded end-user access use cube-embed.
+description: >-
+  Administer a Cube tenant — users, groups, user attributes, access policies, tenant settings, API keys, SCIM provisioning and OIDC — using the Cube CLI. Use whenever someone wants to manage who can access what: add or remove a user, create a group, grant or revoke access to a deployment or resource, set user attributes for row-level security, configure SSO, rotate an API key, or audit current permissions. Triggers on "add someone to", "give access to", "who can see", "remove this user", "set up SSO", "create an API key", "what are this user's permissions", "audit access". To manage deployments themselves use cube-deploy; for embedded end-user access use cube-embed.
 license: Apache-2.0
 ---
 
@@ -23,11 +24,11 @@ Access questions are answered by reading, and most requests are questions
 even when phrased as instructions. Establish the current state first:
 
 ```bash
-cube users list <deployment>
+cube users list
 cube users me
-cube groups list <deployment>
-cube policies get <deployment> ...
-cube attributes list <deployment>
+cube groups list
+cube policies get --resource-type <type> --resource-id <id>
+cube attributes list
 ```
 
 Report what you find before changing it. "Alice is already in the analysts
@@ -36,20 +37,20 @@ group" resolves a lot of requests without a write.
 ## Users and groups
 
 ```bash
-cube users create <deployment> ...
-cube users update <deployment> <user> ...
-cube users delete <deployment> <user>
+cube users create --data '<user>'
+cube users update <user> --data '<changes>'
+cube users delete <user>
 
-cube groups list <deployment>
-cube groups delete <deployment> <group>
+cube groups list
+cube groups delete <group>
 ```
 
 ## Access policies
 
 ```bash
-cube policies get <deployment> ...
-cube policies set-user <deployment> ...
-cube policies set-group <deployment> ...
+cube policies get --resource-type <type> --resource-id <id>
+cube policies set-user --resource-type <type> --resource-id <id> ...
+cube policies set-group --resource-type <type> --resource-id <id> --group <group> ...
 ```
 
 Prefer `set-group` over `set-user`. Per-user grants are invisible at review
@@ -60,10 +61,10 @@ them. If a request is "give Alice access to X", the better answer is usually
 ## User attributes and row-level security
 
 ```bash
-cube attributes list <deployment>
-cube attributes create <deployment> ...
-cube attributes values get <deployment> <attribute> ...
-cube attributes values set <deployment> <attribute> ...
+cube attributes list
+cube attributes create --name <name> --type <type> ...
+cube attributes values get <user>
+cube attributes values set --user <user> --attribute <attribute>
 ```
 
 Attributes feed the security context, which is what row-level security in the
@@ -92,7 +93,7 @@ config and state what will change before touching either.
 To answer "who can see X", combine:
 
 1. `cube policies get` for the resource.
-2. `cube groups list` and group membership for who that resolves to.
+2. `cube groups list` and the user records for who that resolves to.
 3. `cube attributes values get` for any row-level filtering on top.
 
 An access answer that skips step 3 is incomplete — two users with identical
@@ -113,3 +114,5 @@ policies can see different rows.
 | User not found | Often the wrong tenant; check `cube context list` |
 | Policy set but access unchanged | Group membership or an attribute is overriding it — audit all three layers |
 | SCIM write rejected | Provisioning is managed by the IdP; changes belong there, not here |
+| API keys returns the web app instead of JSON | That endpoint is unavailable on this tenant, often because the server is older — report it as unavailable, not as an empty list |
+| OIDC returns `not available` | OIDC is disabled or unsupported on this tenant — do not treat the 404 as an empty configuration |

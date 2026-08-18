@@ -1,6 +1,7 @@
 ---
 name: cube-embed
-description: Set up and debug Cube embedded analytics — embed sessions, embed tokens, embeddable dashboards and embed tenants — using the Cube CLI. Use whenever someone is shipping Cube analytics inside their own product: mint a session for an end user, enable a dashboard for embedding, set up multi-tenant isolation so each customer sees only their data, or debug why an embedded view is empty or unauthorized. Triggers on "embed this dashboard", "embedded analytics", "our customers need to see", "multi-tenant analytics", "the iframe is blank", "embed token", "sign the embed URL", "customer-facing dashboard". For internal access control use cube-admin; for the dashboards themselves use cube-build-content.
+description: >-
+  Set up and debug Cube embedded analytics — embed sessions, embed tokens, embeddable dashboards and embed tenants — using the Cube CLI. Use whenever someone is shipping Cube analytics inside their own product: mint a session for an end user, enable a dashboard for embedding, set up multi-tenant isolation so each customer sees only their data, or debug why an embedded view is empty or unauthorized. Triggers on "embed this dashboard", "embedded analytics", "our customers need to see", "multi-tenant analytics", "the iframe is blank", "embed token", "sign the embed URL", "customer-facing dashboard". For internal access control use cube-admin; for the dashboards themselves use cube-build-content.
 license: Apache-2.0
 ---
 
@@ -38,16 +39,16 @@ about.
 ## Commands
 
 ```bash
-cube embed generate-session <deployment> ...
-cube embed token <deployment> ...
+cube embed generate-session --data '<session>'
+cube embed token --session-id <session>
 
-cube embed enable-dashboard <deployment> <dashboard>
-cube embed dashboard <deployment> <dashboard>
-cube embed disable-dashboard <deployment> <dashboard>
+cube embed enable-dashboard <public-id>
+cube embed dashboard <public-id>
+cube embed disable-dashboard <public-id>
 
-cube embed tenant groups <deployment> ...
-cube embed tenant delete <deployment> ...
-cube embed tenant delete-group <deployment> ...
+cube embed tenant groups <tenant>
+cube embed tenant delete <tenant>
+cube embed tenant delete-group <tenant> <group>
 ```
 
 Sessions and tokens are minted server-side. They must never be generated in
@@ -57,7 +58,8 @@ user's access until it expires.
 ## Setting up a new embedded dashboard
 
 1. Build and publish the dashboard (`cube-build-content`).
-2. `cube embed enable-dashboard` — until this runs, embedding it fails.
+2. Get the dashboard's public id, then run `cube embed enable-dashboard` —
+   until this runs, embedding it fails.
 3. Confirm the model has row-level security keyed on the attribute your
    security context carries. Check with `cube-explore-model`; if it does not,
    stop and fix the model first.

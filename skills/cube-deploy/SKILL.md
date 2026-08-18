@@ -22,29 +22,29 @@ cube context list
 ```bash
 cube deployments list
 cube deployments get <deployment>
-cube deployments create --bootstrap ...     # scaffolds and builds a serving deployment
+cube deployments create ...                 # scaffolds and builds a serving deployment
 cube deployments update <deployment> ...
 cube deployments delete <deployment>
-cube regions list
+cube regions
 ```
 
-`--bootstrap` does the whole first-run path — scaffold, then build. Without
-it you get an empty deployment you then have to populate.
+Deployment creation always scaffolds the project and runs the first build.
+There is no separate bootstrap step.
 
 ## Shipping code
 
 Two different routes, and they do not mix:
 
 ```bash
-cube deploy                                  # upload the local project directory and build
-cube github connect ...                      # link a repo; Cube builds from git
+cube deploy <deployment>                     # upload the local project directory and build
+cube github connect <deployment> <repo> --installation <installation>  # link git and build
 ```
 
 ```bash
 cube github status
 cube github installations
-cube github repos
-cube github branches
+cube github repos <installation>
+cube github branches <owner/repo> --installation <installation>
 ```
 
 `cube deploy` pushes what is on your disk. `cube github connect` makes git the
@@ -67,15 +67,21 @@ anyone it shipped.
 
 ```bash
 cube environments list <deployment>
-cube environments tokens <deployment>
-cube environments create-token <deployment> --meta-sync
+cube environments tokens <deployment> <environment>
+cube environments create-token <deployment> <environment> --security-context '<json>'
+cube environments create-token <deployment> <environment> --security-context '{}' --meta-sync
 
 cube variables list <deployment>
 cube variables set <deployment> KEY=VALUE
 ```
 
-`cube variables set` upserts. Read the current value first and say what it
-was — a silently overwritten database URL is hard to trace back later.
+`create-token` prints a credential. Never echo it back, write it to the
+repository, or include it in a transcript; report only that it was created,
+for which environment, and when it expires.
+
+`cube variables set` upserts. Run `variables list` first and say whether the
+key already exists. Secret values are masked, so never claim to know or print
+the old value — a silently overwritten database URL is hard to trace later.
 
 Never print secret values into a transcript. Confirm that a variable was set
 without echoing what it was set to.
@@ -93,7 +99,7 @@ failed, `build-status` carries the error and is the better starting point.
 
 ## Debugging a failed deployment
 
-1. `cube deployments build-status --branch <branch>` — read the error verbatim.
+1. `cube deployments build-status <deployment> --branch <branch>` — read the error verbatim.
 2. If it is a model error, hand to `cube-build-model`; that is where the fix
    goes.
 3. If the build passed but queries fail, check `cube variables list` for

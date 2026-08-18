@@ -1,6 +1,9 @@
 {
   "name": "cube",
-  "url": "https://github.com/cube-js/cube-agent-skills",
+  "owner": {
+    "name": "Cube Dev, Inc."
+  },
+  "description": "Official Cube agent skills for operating Cube through the CLI.",
   "plugins": [
     {
       "name": "cube",
