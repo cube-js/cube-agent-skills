@@ -1,6 +1,7 @@
 ---
 name: cube-configure-agent
-description: Inspect and tune Cube's in-product AI agent — its rules, certified queries and Agent Skills — by authoring markdown in the semantic model with the Cube CLI. Use whenever someone wants the Cube agent to answer better: teach it a business definition, stop it making a recurring mistake, certify a trusted query, capture a repeatable workflow as a skill, or find out why it answered the way it did. Triggers on "the agent keeps getting X wrong", "teach the agent that", "make the agent always", "add a certified query", "create an agent skill", "why did the agent say that", "what rules does the agent have". To change the underlying model use cube-build-model; to explore what is queryable use cube-explore-model.
+description: >-
+  Inspect and tune Cube's in-product AI agent — its rules, certified queries and Agent Skills — by authoring markdown in the semantic model with the Cube CLI. Use whenever someone wants the Cube agent to answer better: teach it a business definition, stop it making a recurring mistake, certify a trusted query, capture a repeatable workflow as a skill, or find out why it answered the way it did. Triggers on "the agent keeps getting X wrong", "teach the agent that", "make the agent always", "add a certified query", "create an agent skill", "why did the agent say that", "what rules does the agent have". To change the underlying model use cube-build-model; to explore what is queryable use cube-explore-model.
 license: Apache-2.0
 ---
 

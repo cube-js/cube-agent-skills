@@ -1,6 +1,7 @@
 ---
 name: cube-build-content
-description: Create and update saved content in Cube — workbooks, reports, dashboards, folders and scheduled notifications — using the Cube CLI. Use whenever someone wants to build or change something people will look at: make a dashboard, save a query as a report, add a chart, organize content into folders, publish a workbook, or schedule a report to go out on a cadence. Triggers on "build me a dashboard", "save this as a report", "add a chart for", "publish this workbook", "schedule this weekly", "move these into a folder", "duplicate that dashboard". To find existing content first use cube-explore-content; to check a query returns the right numbers before saving it use cube-run-query.
+description: >-
+  Create and update saved content in Cube — workbooks, reports, dashboards, folders and scheduled notifications — using the Cube CLI. Use whenever someone wants to build or change something people will look at: make a dashboard, save a query as a report, add a chart, organize content into folders, publish a workbook, or schedule a report to go out on a cadence. Triggers on "build me a dashboard", "save this as a report", "add a chart for", "publish this workbook", "schedule this weekly", "move these into a folder", "duplicate that dashboard". To find existing content first use cube-explore-content; to check a query returns the right numbers before saving it use cube-run-query.
 license: Apache-2.0
 ---
 
@@ -35,6 +36,7 @@ Content hangs off a workbook, so build outward from one:
 cube workbooks create <deployment> --name "Revenue review"
 cube workbooks update <deployment> <workbook> --name "Revenue review Q3"
 cube workbooks duplicate <deployment> <workbook>
+cube workbooks dashboard <deployment> <workbook> --data '<dashboard-input>'
 cube workbooks publish <deployment> <workbook>      # makes the dashboard
 cube workbooks delete <deployment> <workbook>
 ```
@@ -46,9 +48,8 @@ uses.
 ## Reports
 
 ```bash
-cube reports create <deployment> --name "Revenue by month" --json-query '<query>'
+cube reports create <deployment> --workbook <workbook> --name "Revenue by month" --json-query '<query>'
 cube reports update <deployment> <report> --json-query '<query>'
-cube reports connect-workbook <deployment> <report> <workbook>
 cube reports refresh <deployment> <report>
 cube reports delete <deployment> <report>
 ```
@@ -60,6 +61,13 @@ missing.
 
 Complex bodies go through `-d/--data`, which accepts inline JSON, `@file.json`
 or `-` for stdin. Dedicated flags override values in `--data`.
+
+`cube reports connect-workbook` is for placing a report in an external
+spreadsheet, not attaching it to a Cube workbook. For that workflow use:
+
+```bash
+cube reports connect-workbook <deployment> <report> --external-workbook-id <id> --result-location <range>
+```
 
 ## Folders
 

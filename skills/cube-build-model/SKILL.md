@@ -94,7 +94,7 @@ perfectly.
 When the user has the project on disk rather than wanting file-by-file edits:
 
 ```bash
-cube deploy            # uploads the local directory to the deployment and builds
+cube deploy <deployment>   # uploads the local directory to the deployment and builds
 ```
 
 This is a different workflow from the dev-mode one above — it replaces the

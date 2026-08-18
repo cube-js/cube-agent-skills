@@ -59,7 +59,19 @@ def parse_frontmatter(text: str, where: str) -> dict[str, str] | None:
             continue
         key, _, value = raw.partition(":")
         key = key.strip()
-        fields[key] = value.strip().strip("\"'")
+        value = value.strip()
+        if value in {">", ">-", "|", "|-"}:
+            fields[key] = ""
+        else:
+            if (
+                not value.startswith(("\"", "'"))
+                and re.search(r":(?:[ \t]|$)", value)
+            ):
+                errors.append(
+                    f"{where}: unquoted YAML value for {key!r} contains ': ' — "
+                    "quote it or use a folded block"
+                )
+            fields[key] = value.strip("\"'")
     return fields
 
 

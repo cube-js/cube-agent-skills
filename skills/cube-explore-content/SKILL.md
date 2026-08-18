@@ -1,6 +1,7 @@
 ---
 name: cube-explore-content
-description: Find and inspect saved content in a Cube workspace — workbooks, dashboards, reports, folders and scheduled notifications — using the Cube CLI. Use whenever someone wants to know what already exists rather than build something new: locate a dashboard, list reports, see what a report queries, find who a notification goes to, or check what saved content references a model field before renaming it. Triggers on "what dashboards do we have", "find the revenue report", "where is that workbook", "what's in this folder", "who gets this scheduled report", "is anything using this field". To create or edit content use cube-build-content; to inspect the semantic model itself use cube-explore-model.
+description: >-
+  Find and inspect saved content in a Cube workspace — workbooks, dashboards, reports, folders and scheduled notifications — using the Cube CLI. Use whenever someone wants to know what already exists rather than build something new: locate a dashboard, list reports, see what a report queries, find who a notification goes to, or check what saved content references a model field before renaming it. Triggers on "what dashboards do we have", "find the revenue report", "where is that workbook", "what's in this folder", "who gets this scheduled report", "is anything using this field". To create or edit content use cube-build-content; to inspect the semantic model itself use cube-explore-model.
 license: Apache-2.0
 ---
 
@@ -43,14 +44,16 @@ cube folders ancestors <deployment> <folder>   # where a folder sits in the tree
 
 ```bash
 cube workbooks list <deployment>
-cube workbooks get <deployment> <workbook>
-cube workbooks dashboard <deployment> <workbook>   # the published dashboard
-cube workbooks ai-thread <deployment> <workbook>   # the agent conversation behind it
+cube workbooks get <deployment> <workbook>          # includes draft and published dashboards
 
 cube reports list <deployment>
 cube reports get <deployment> <report>             # includes the saved query
-cube reports folders <deployment> <report>
+cube reports folders <deployment>                  # folders that contain reports
 ```
+
+Despite their names, `cube workbooks dashboard` updates a dashboard draft and
+`cube workbooks ai-thread` attaches a thread to a published dashboard. They
+are writes owned by `cube-build-content`, not inspection commands.
 
 `cube reports get` is the one that answers "what does this actually show" —
 it returns the saved query, so you can name the measures and dimensions
