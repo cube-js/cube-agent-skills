@@ -1,17 +1,28 @@
 # Cube agent skills
 
-Official [Cube](https://cube.dev) skills for Claude Code, Cursor, OpenAI Codex,
-GitHub Copilot, Gemini CLI, and other [Agent Skills](https://agentskills.io)
-compatible agents.
+The official [Cube](https://cube.dev) plugin for Claude, plus skills for Cursor,
+OpenAI Codex, GitHub Copilot, Gemini CLI, and other
+[Agent Skills](https://agentskills.io) compatible agents.
 
-Explore and build your semantic model, manage workbooks and dashboards, run
-queries, administer access, and ship deployments — from the agent you already
-work in. The skills drive the [Cube CLI](https://docs.cube.dev/reference/cli),
-so anything you can do through Cube's public API, your agent can do too.
+Ask questions of your governed semantic layer, explore and build the model,
+create dashboards, administer access, and ship deployments — from the agent you
+already work in.
 
-> Cube agent skills run in your coding agent and operate Cube through the CLI.
-> They are not Agent Skills in Cube, which your data team authors in the
-> semantic model and runs from Analytics Chat.
+> Cube agent skills run in your coding agent. They are not Agent Skills in
+> Cube, which your data team authors in the semantic model and runs from
+> Analytics Chat.
+
+## What's in the Claude plugin
+
+- **The Cube MCP server** at `https://cubecloud.dev/mcp`, hosted by Cube. You
+  sign in with OAuth the first time you use it; there is nothing to install.
+  It answers data questions, searches and edits the semantic model on a dev
+  branch, and builds dashboards — always as the signed-in user, with their
+  access rules applied.
+- **Nine skills** that carry Cube's workflows. They use the MCP tools when
+  they're connected and the [Cube CLI](https://docs.cube.dev/reference/cli)
+  for what MCP doesn't cover: administration, embedding, and the deployment
+  lifecycle.
 
 ## Install
 
@@ -22,18 +33,31 @@ so anything you can do through Cube's public API, your agent can do too.
 /plugin install cube@cube
 ```
 
+Then run `/mcp`, select `plugin:cube:cube`, and sign in to Cube.
+
+If you already connected the [Cube connector](https://docs.cube.dev/docs/integrations/mcp-server)
+in Claude, you don't get two servers: both point at the same endpoint, so
+Claude Code connects once, using the plugin's definition, and `/mcp` lists the
+connector as hidden.
+
 **Codex, Copilot, Gemini CLI, and other skills.sh-compatible agents**
 
 ```
 npx skills add cube-js/cube-agent-skills
 ```
 
+This installs the skills only. Add the MCP server to your agent as described
+in [Cube MCP server](https://docs.cube.dev/docs/integrations/mcp-server), or
+install the Cube CLI below.
+
 Cursor and Snowflake Cortex Code are coming next; until then, copy `skills/`
 into that agent's skills directory.
 
-## Prerequisites
+## The Cube CLI
 
-Install the Cube CLI:
+Optional when the MCP server is connected. Required for `cube-admin`,
+`cube-embed` and most of `cube-deploy`, and for any skill when the MCP server
+isn't available, as in a CI job.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/cube-js/cube/master/install-cli.sh | sh
@@ -46,22 +70,22 @@ cube login                       # interactive — opens a browser
 export CUBE_API_URL=... CUBE_API_KEY=...   # headless, CI, agent loops
 ```
 
-Every skill checks both before doing anything, and stops with instructions
-rather than guessing.
+Every skill checks for the MCP tools or the CLI before doing anything, and
+stops with instructions rather than guessing.
 
 ## Skills
 
-| Skill | What it does |
-| --- | --- |
-| `cube-explore-model` | Search and inspect the semantic model — cubes, views, measures, joins, and impact analysis before a change |
-| `cube-build-model` | Author cubes and views in YAML on a dev-mode branch, validate, commit, deploy |
-| `cube-explore-content` | Browse workbooks, dashboards, reports and folders |
-| `cube-build-content` | Create and update workbooks, reports, dashboards and scheduled notifications |
-| `cube-run-query` | Run semantic-layer queries and interpret the results |
-| `cube-configure-agent` | Inspect and tune the in-product agent — agents, rules, certified queries, skills |
-| `cube-admin` | Users, groups, attributes, access policies, tenant settings, SCIM and OIDC |
-| `cube-embed` | Embed sessions, tokens and embed tenants for embedded analytics |
-| `cube-deploy` | Deployments, environments, environment variables, build status and logs |
+| Skill | What it does | Runs over |
+| --- | --- | --- |
+| `cube-explore-model` | Search and inspect the semantic model — cubes, views, measures, joins, and impact analysis before a change | MCP or CLI |
+| `cube-build-model` | Author cubes and views in YAML on a dev-mode branch, validate, commit, deploy | MCP or CLI |
+| `cube-explore-content` | Browse workbooks, dashboards, reports and folders | CLI; MCP reads a known workbook or report |
+| `cube-build-content` | Create and update workbooks, reports, dashboards and scheduled notifications | MCP or CLI; schedules are CLI-only |
+| `cube-run-query` | Run semantic-layer queries and interpret the results | MCP or CLI |
+| `cube-configure-agent` | Inspect and tune the in-product agent — agents, rules, certified queries, skills | MCP or CLI |
+| `cube-admin` | Users, groups, attributes, access policies, tenant settings, SCIM and OIDC | CLI |
+| `cube-embed` | Embed sessions, tokens and embed tenants for embedded analytics | CLI |
+| `cube-deploy` | Deployments, environments, environment variables, build status and logs | CLI; MCP for read-only checks |
 
 Skills activate on their own when a request matches. You can also name one
 directly: *"use cube-build-model to add a churn measure."*
@@ -73,13 +97,9 @@ worth stating plainly:
 
 | | What it is | Where it runs |
 | --- | --- | --- |
-| **Cube connector** | Ask Cube questions in natural language | Claude — desktop, web, Code |
-| **Cube agent skills** (this repo) | Operate Cube — model, content, access, deployments | Your coding agent, over the `cube` CLI |
+| **Cube MCP server** | Ask questions, edit the model, build dashboards — the Cube connector in Claude, and bundled in this plugin | Claude — desktop, web, Code — and any MCP client |
+| **Cube agent skills** (this repo) | Workflows for operating Cube — model, content, access, deployments | Your coding agent, over the MCP server and the `cube` CLI |
 | **Agent Skills in Cube** | Saved workflows your data team authors in the semantic model | Analytics Chat, via the `/` menu |
-
-The [Cube connector](https://docs.cube.dev/docs/integrations/mcp-server) and
-these skills compose: connect both, and Claude can ask questions of your data
-*and* act on the platform.
 
 ## Contributing
 

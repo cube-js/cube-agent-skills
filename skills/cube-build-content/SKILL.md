@@ -1,7 +1,7 @@
 ---
 name: cube-build-content
 description: >-
-  Create and update saved content in Cube — workbooks, reports, dashboards, folders and scheduled notifications — using the Cube CLI. Use whenever someone wants to build or change something people will look at: make a dashboard, save a query as a report, add a chart, organize content into folders, publish a workbook, or schedule a report to go out on a cadence. Triggers on "build me a dashboard", "save this as a report", "add a chart for", "publish this workbook", "schedule this weekly", "move these into a folder", "duplicate that dashboard". To find existing content first use cube-explore-content; to check a query returns the right numbers before saving it use cube-run-query.
+  Create and update saved content in Cube — workbooks, reports, dashboards, folders and scheduled notifications — through the Cube MCP tools or the Cube CLI. Use whenever someone wants to build or change something people will look at: make a dashboard, save a query as a report, add a chart, organize content into folders, publish a workbook, or schedule a report to go out on a cadence. Triggers on "build me a dashboard", "save this as a report", "add a chart for", "publish this workbook", "schedule this weekly", "move these into a folder", "duplicate that dashboard". To find existing content first use cube-explore-content; to check a query returns the right numbers before saving it use cube-run-query.
 license: Apache-2.0
 ---
 
@@ -10,7 +10,29 @@ license: Apache-2.0
 Writes state. Reports and dashboards are what people see, so a mistake here
 is visible to more than the person who made it.
 
-## Preflight
+## Choose the path
+
+**If the Cube MCP tools are available** (this plugin's
+`cube` server or the Cube connector), use them for workbooks, reports, dashboards and folders:
+
+1. Verify the query with `runQuery` first — see `cube-run-query`.
+2. `createWorkbook` — returns `workbookId` and a `url`. Skip it when the user
+   named a workbook to build into.
+3. `createReport` with that `workbookId`, one per chart. Reports take Cube SQL
+   (`sqlQuery`) and a `chartCategory`. Omit `workbookId` only for a standalone
+   exploration, which is what the Sheets and Excel add-ons list.
+4. `readWorkbook`, then `updateDashboard` to lay the reports out.
+5. `publishDashboard` — returns the live `url`. Give it to the user.
+
+Change an existing report in place with `readReport` and `updateReport`
+rather than recreating it. `manageFolders` lists and creates folders.
+
+Scheduled notifications, duplicating a workbook, and connecting a report to
+an external spreadsheet are CLI-only. Use the CLI path below for those, and
+for everything when the MCP tools are not connected. The order of operations
+and conventions apply to both paths.
+
+## Preflight (CLI)
 
 ```bash
 command -v cube >/dev/null || echo "Cube CLI not installed: curl -fsSL https://raw.githubusercontent.com/cube-js/cube/master/install-cli.sh | sh"

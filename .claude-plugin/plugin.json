@@ -3,7 +3,7 @@
   "name": "cube",
   "displayName": "Cube",
   "version": "0.1.0",
-  "description": "Operate Cube from your coding agent — explore and build the semantic model, manage workbooks and dashboards, run queries, administer access, and ship deployments, all through the Cube CLI.",
+  "description": "Cube for Claude — ask questions of your governed semantic layer, explore and build the semantic model, create dashboards, and administer and deploy Cube. Bundles the hosted Cube MCP server, with skills that drive it and the Cube CLI.",
   "author": {
     "name": "Cube Dev, Inc.",
     "url": "https://cube.dev"
@@ -15,8 +15,10 @@
     "cube",
     "semantic-layer",
     "analytics",
+    "mcp",
     "data-modeling",
     "business-intelligence",
+    "dashboards",
     "cli"
   ]
 }

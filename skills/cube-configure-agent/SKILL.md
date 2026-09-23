@@ -1,7 +1,7 @@
 ---
 name: cube-configure-agent
 description: >-
-  Inspect and tune Cube's in-product AI agent — its rules, certified queries and Agent Skills — by authoring markdown in the semantic model with the Cube CLI. Use whenever someone wants the Cube agent to answer better: teach it a business definition, stop it making a recurring mistake, certify a trusted query, capture a repeatable workflow as a skill, or find out why it answered the way it did. Triggers on "the agent keeps getting X wrong", "teach the agent that", "make the agent always", "add a certified query", "create an agent skill", "why did the agent say that", "what rules does the agent have". To change the underlying model use cube-build-model; to explore what is queryable use cube-explore-model.
+  Inspect and tune Cube's in-product AI agent — its rules, certified queries and Agent Skills — by authoring markdown in the semantic model, through the Cube MCP tools or the Cube CLI. Use whenever someone wants the Cube agent to answer better: teach it a business definition, stop it making a recurring mistake, certify a trusted query, capture a repeatable workflow as a skill, or find out why it answered the way it did. Triggers on "the agent keeps getting X wrong", "teach the agent that", "make the agent always", "add a certified query", "create an agent skill", "why did the agent say that", "what rules does the agent have". To change the underlying model use cube-build-model; to explore what is queryable use cube-explore-model.
 license: Apache-2.0
 ---
 
@@ -11,7 +11,24 @@ Mostly know-how rather than commands. Two CLI calls read the current state;
 everything else is writing markdown into the data model, which means the
 dev-mode workflow from `cube-build-model` applies.
 
-## Preflight
+## Choose the path
+
+**If the Cube MCP tools are available** (this plugin's
+`cube` server or the Cube connector), edit agent configuration like any other model file, with the
+`cube-build-model` loop: `startDataModelEdit`, then `readDataModelFile` and
+`writeDataModelFile` under `agents/`, then `commitDataModelChanges`. Two
+things the MCP path does better:
+
+- `listDeployments` returns each deployment's agents.
+- `chat` with the dev `branchName` runs Cube's agent against that branch's
+  rules, certified queries and skills. Ask the question that went wrong before
+  and after the change, in two separate chats — a chat stays on the branch it
+  started on.
+
+The CLI's `cube agents skills` lists skill metadata in one call; over MCP,
+list the files under `agents/skills/`.
+
+## Preflight (CLI)
 
 ```bash
 command -v cube >/dev/null || echo "Cube CLI not installed: curl -fsSL https://raw.githubusercontent.com/cube-js/cube/master/install-cli.sh | sh"

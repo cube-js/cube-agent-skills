@@ -11,6 +11,10 @@ Embedding is where analytics leaves your team and reaches your customers, so
 the isolation model matters more than the mechanics. Most of the work is
 getting the security context right; the CLI part is short.
 
+CLI-only. The Cube MCP tools do not mint embed sessions or configure
+embedding. Without a terminal and the Cube CLI, explain the model below and
+say which commands the user needs to run.
+
 ## Preflight
 
 ```bash

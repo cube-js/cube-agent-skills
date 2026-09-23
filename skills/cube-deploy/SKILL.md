@@ -9,6 +9,15 @@ license: Apache-2.0
 Infrastructure, not modeling. Environment variables and deployment settings
 affect everyone using that deployment.
 
+## Choose the path
+
+Deployment lifecycle is CLI-only: creating deployments, setting environment
+variables, connecting a repo, build status and logs. The Cube MCP tools can
+help diagnose — `listDeployments`, `getDeploymentEnv` (read-only, secrets
+redacted), and `getPreAggregationStatus` for a rollup that will not build —
+but cannot change a deployment. Without a terminal and the Cube CLI, say so,
+and point the user to the deployment's settings in the Cube console.
+
 ## Preflight
 
 ```bash

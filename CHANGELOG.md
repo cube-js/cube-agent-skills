@@ -7,6 +7,18 @@ tied to the Cube CLI or the Cube release train.
 
 ### Added
 
+- The hosted Cube MCP server (`https://cubecloud.dev/mcp`) is bundled in the
+  Claude plugin via `.mcp.json`. It points at the same endpoint as the Cube
+  connector, so Claude Code treats the two as one server rather than
+  connecting twice.
+- Every skill now says which path to take: the Cube MCP tools when they are
+  connected, the Cube CLI otherwise. `cube-admin` and `cube-embed` are
+  CLI-only, and `cube-deploy` uses MCP only for read-only checks.
+- An eval suite under `evals/` for `claude plugin eval`: routing cases for
+  all nine skills, MCP-path cases for querying, model editing and dashboards
+  against a mocked Cube server, and a negative case.
+- CI runs `claude plugin validate --strict` on the marketplace, plugin and
+  skills.
 - Nine skills: `cube-explore-model`, `cube-build-model`, `cube-explore-content`,
   `cube-build-content`, `cube-run-query`, `cube-configure-agent`, `cube-admin`,
   `cube-embed`, `cube-deploy`.
@@ -34,6 +46,10 @@ tied to the Cube CLI or the Cube release train.
   selects `cube-explore-model` from a clean install.
 
 ### Not yet verified
+
+- The eval suite has not been run yet: it needs a logged-in `claude` CLI.
+- The MCP path has not been driven end to end in a Claude Code session with
+  the plugin installed.
 
 Mutating paths were intentionally not executed against the shared d3-demo
 tenant. Creating or changing models, content, agents, users, embed sessions,

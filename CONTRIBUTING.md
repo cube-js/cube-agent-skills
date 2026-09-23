@@ -76,6 +76,22 @@ in a real agent:
 Step 2 is the one people skip. A skill that only works when invoked by name
 has a broken description, and that is the most common defect here.
 
+## Evals
+
+`evals/` holds a suite for `claude plugin eval`. It automates step 2 — each
+case is a request phrased the way a user would type it, graded on which skill
+fired — and checks the MCP path against a mocked Cube server in
+`evals/mocks/cube/`, so it needs no tenant.
+
+```bash
+claude plugin eval . --runs 1 --ablation none   # quick pass while iterating
+claude plugin eval .                            # 3 runs, with a no-plugin baseline
+```
+
+It needs a logged-in `claude` CLI and runs on your own Claude usage. Add a
+case when you add a skill or change a description, and say in the PR what the
+suite scored.
+
 ## Pull requests
 
 - Sign off your commits: `git commit -s` ([DCO](DCO.md)).

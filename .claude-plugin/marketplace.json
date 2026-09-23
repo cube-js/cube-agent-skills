@@ -1,15 +1,22 @@
 {
   "name": "cube",
   "owner": {
-    "name": "Cube Dev, Inc."
+    "name": "Cube Dev, Inc.",
+    "url": "https://cube.dev"
   },
-  "description": "Official Cube agent skills for operating Cube through the CLI.",
+  "description": "Official Cube plugin for Claude: the hosted Cube MCP server plus skills for operating Cube.",
   "plugins": [
     {
       "name": "cube",
       "displayName": "Cube",
-      "description": "Operate Cube from your coding agent — explore and build the semantic model, manage workbooks and dashboards, run queries, administer access, and ship deployments.",
+      "description": "Cube for Claude — ask questions of your governed semantic layer, explore and build the semantic model, create dashboards, and administer and deploy Cube. Bundles the hosted Cube MCP server, with skills that drive it and the Cube CLI.",
       "version": "0.1.0",
+      "author": {
+        "name": "Cube Dev, Inc.",
+        "url": "https://cube.dev"
+      },
+      "category": "database",
+      "homepage": "https://docs.cube.dev/docs/integrations/agent-skills",
       "source": "./"
     }
   ]
