@@ -92,6 +92,17 @@ It needs a logged-in `claude` CLI and runs on your own Claude usage. Add a
 case when you add a skill or change a description, and say in the PR what the
 suite scored.
 
+`evals/mocks/cube/_tools.json` holds the Cube MCP server's tool list, so the
+mocked tools carry their real names, descriptions and input schemas. Without
+it the model has to guess argument names and the mocks' `expect` guards
+abort the run. When the server adds or changes a tool that a case uses,
+update the entry. The chart and dashboard option schemas are shortened there.
+
+Graders that search the `trace` must match a tool *call*,
+`"name":"mcp__plugin_cube_cube__<tool>"`, not the bare tool name: the
+transcript lists every available tool at startup, so a bare name always
+matches. Prefer a `tool_used` grader when you are checking a single tool.
+
 ## Pull requests
 
 - Sign off your commits: `git commit -s` ([DCO](DCO.md)).

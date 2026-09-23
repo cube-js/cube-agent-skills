@@ -62,6 +62,13 @@ tied to the Cube CLI or the Cube release train.
 
 ### Verified
 
+- `claude plugin eval . --runs 1 --ablation none` (Claude Code 2.1.280)
+  passed 10/10 cases. Every routing case fired the intended skill; an
+  unrelated request pulled in no Cube skill or tool. On the mocked Cube
+  server, querying went `searchDataModel` → `runQuery`; the model edit went
+  `startDataModelEdit` → read → write → `runQuery` → `commitDataModelChanges`
+  and never called `mergeToDefaultBranch`; and the dashboard was built and
+  published in the documented order.
 - Installed all nine skills into a clean Codex project with `skills@1.5.22`.
 - Validated and installed the Claude Code plugin with Claude Code 2.1.234.
 - Exercised the read-only paths against d3-demo deployment 75 with Cube CLI
@@ -73,9 +80,11 @@ tied to the Cube CLI or the Cube release train.
 
 ### Not yet verified
 
-- The eval suite has not been run yet: it needs a logged-in `claude` CLI.
-- The MCP path has not been driven end to end in a Claude Code session with
-  the plugin installed.
+- The MCP path has been exercised only against the mocked Cube server in
+  `evals/`, not end to end against a real tenant in a Claude Code session.
+- The eval suite has only had one run per case, on the default model, with no
+  no-plugin baseline. Anthropic's guidance also asks for runs on Haiku,
+  Sonnet and Opus.
 - Several fixes follow the CLI docs and API schema but have not been run: that
   `commit` pushes into the parent branch, the attribute-value API call, and the
   `/dev-mode/<branch>/` query endpoint. The commands and flags were checked
