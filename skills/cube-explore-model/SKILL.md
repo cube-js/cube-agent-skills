@@ -2,6 +2,7 @@
 name: cube-explore-model
 description: Search and inspect a Cube semantic model — cubes, views, measures, dimensions, joins, and the files they live in — through the Cube MCP tools or the Cube CLI. Use whenever someone wants to know what data is available in Cube, where a metric is defined, which cube a field belongs to, how two cubes join, or what a change would affect. Triggers on "what can I query", "what measures do we have", "where is revenue defined", "show me the data model", "what's in this deployment", "which cube has customer email", and impact questions like "what breaks if I rename this". Read the model with this skill before changing it. To edit the model use cube-build-model; to run a query and get numbers back use cube-run-query; to browse workbooks, dashboards and reports use cube-explore-content.
 license: Apache-2.0
+compatibility: Needs the Cube MCP server (bundled in the Cube plugin, or the Cube connector) or the Cube CLI, and network access to Cube Cloud.
 ---
 
 # Explore a Cube semantic model
@@ -11,17 +12,20 @@ which also means you can run any of it before you know what you're doing.
 
 ## Choose the path
 
+Cube MCP tools are written `cube:<tool>` below: the `cube` server this plugin
+bundles. Through the Cube connector, the same tools carry the connector's name.
+
 **If the Cube MCP tools are available** (this plugin's
 `cube` server or the Cube connector), use them — no install, no login step:
 
 | Question | MCP tool |
 | --- | --- |
-| What can I query; which view has a field | `searchDataModel` — the compiled model, searched by meaning. Omit `query` to list everything |
-| Which files exist; what does one say | `listDataModelFiles`, `readDataModelFile` |
-| What did a branch change | `getBranchDiff` |
-| Which deployments exist | `listDeployments`, then pass `deploymentId` |
+| What can I query; which view has a field | `cube:searchDataModel` — the compiled model, searched by meaning. Omit `query` to list everything |
+| Which files exist; what does one say | `cube:listDataModelFiles`, `cube:readDataModelFile` |
+| What did a branch change | `cube:getBranchDiff` |
+| Which deployments exist | `cube:listDeployments`, then pass `deploymentId` |
 
-`searchDataModel` plays the role of `cube meta` below: it answers availability
+`cube:searchDataModel` plays the role of `cube meta` below: it answers availability
 ("is this exposed"), and the files answer authorship ("where is this
 written"). That distinction, and the impact-analysis checklist, hold on both
 paths.
@@ -49,7 +53,7 @@ below takes a deployment id that is only unique within a tenant.
 Every data-model command needs a deployment id.
 
 ```bash
-cube deployments list            # table: id, name, status
+cube deployments list            # table: ID, NAME, URL, STEP
 cube deployments list --json     # when you need to filter programmatically
 ```
 
@@ -132,7 +136,7 @@ alone is not an answer:
 
 1. **Direct references.** Search the `--content` dump for the field name
    across cubes and views: joins, `sql` expressions, view `includes`.
-2. **View exposure.** Check `searchDataModel` or `cube meta` for whether the
+2. **View exposure.** Check `cube:searchDataModel` or `cube meta` for whether the
    field surfaces in a view. A field exposed in a view has downstream consumers you cannot see
    from the model alone.
 3. **Saved content.** Reports and workbooks reference members by name. Hand

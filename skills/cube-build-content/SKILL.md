@@ -3,6 +3,7 @@ name: cube-build-content
 description: >-
   Create and update saved content in Cube — workbooks, reports, dashboards, folders and scheduled notifications — through the Cube MCP tools or the Cube CLI. Use whenever someone wants to build or change something people will look at: make a dashboard, save a query as a report, add a chart, organize content into folders, publish a workbook, or schedule a report to go out on a cadence. Triggers on "build me a dashboard", "save this as a report", "add a chart for", "publish this workbook", "schedule this weekly", "move these into a folder", "duplicate that dashboard". To find existing content first use cube-explore-content; to check a query returns the right numbers before saving it use cube-run-query.
 license: Apache-2.0
+compatibility: Needs the Cube MCP server (bundled in the Cube plugin, or the Cube connector) or the Cube CLI, and network access to Cube Cloud.
 ---
 
 # Build Cube content
@@ -12,20 +13,23 @@ is visible to more than the person who made it.
 
 ## Choose the path
 
+Cube MCP tools are written `cube:<tool>` below: the `cube` server this plugin
+bundles. Through the Cube connector, the same tools carry the connector's name.
+
 **If the Cube MCP tools are available** (this plugin's
 `cube` server or the Cube connector), use them for workbooks, reports, dashboards and folders:
 
-1. Verify the query with `runQuery` first — see `cube-run-query`.
-2. `createWorkbook` — returns `workbookId` and a `url`. Skip it when the user
+1. Verify the query with `cube:runQuery` first — see `cube-run-query`.
+2. `cube:createWorkbook` — returns `workbookId` and a `url`. Skip it when the user
    named a workbook to build into.
-3. `createReport` with that `workbookId`, one per chart. Reports take Cube SQL
+3. `cube:createReport` with that `workbookId`, one per chart. Reports take Cube SQL
    (`sqlQuery`) and a `chartCategory`. Omit `workbookId` only for a standalone
    exploration, which is what the Sheets and Excel add-ons list.
-4. `readWorkbook`, then `updateDashboard` to lay the reports out.
-5. `publishDashboard` — returns the live `url`. Give it to the user.
+4. `cube:readWorkbook`, then `cube:updateDashboard` to lay the reports out.
+5. `cube:publishDashboard` — returns the live `url`. Give it to the user.
 
-Change an existing report in place with `readReport` and `updateReport`
-rather than recreating it. `manageFolders` lists and creates folders.
+Change an existing report in place with `cube:readReport` and `cube:updateReport`
+rather than recreating it. `cube:manageFolders` lists and creates folders.
 
 Scheduled notifications, duplicating a workbook, and connecting a report to
 an external spreadsheet are CLI-only. Use the CLI path below for those, and
@@ -96,18 +100,23 @@ cube reports connect-workbook <deployment> <report> --external-workbook-id <id> 
 ```bash
 cube folders create <deployment> --name "Finance"
 cube folders update <deployment> <folder> --name "Finance & RevOps"
-cube workspace move <deployment> ...      # move content between folders
+cube workspace move <deployment> --type WORKBOOK|REPORT|FOLDER --id <id> --folder <folder>   # omit --folder for the root
 cube folders delete <deployment> <folder>
 ```
 
 ## Scheduled notifications
 
 ```bash
-cube notifications create <deployment> ...
-cube notifications recipients add <deployment> <notification> ...
+cube notifications create <deployment> --data '{"scheduleType":"WEEKLY","dashboardPublicId":"<id>","dayOfWeek":1,"hour":9,"timezone":"Europe/London"}'
+cube notifications recipients add <deployment> <notification> --data '{"recipients":[{"type":"USER","userId":<id>}]}'
 cube notifications recipients list <deployment> <notification>
-cube notifications update <deployment> <notification> ...
+cube notifications update <deployment> <notification> --data '<UpdateNotificationInput JSON>'
 ```
+
+`scheduleType` is `HOURLY`, `DAILY`, `WEEKLY`, `MONTHLY` or `CUSTOM` (with
+`customCron`), `dayOfWeek` runs 0–6 from Sunday, and `hour` is 0–23 in
+`timezone`. A recipient's `type` is `USER`, `EMBED_USER` or `SLACK`. For
+the full body, `cube spec notification --json` prints the schemas.
 
 Before changing or deleting a schedule, list its recipients and say who is
 currently receiving it. People notice when a report stops arriving, and they

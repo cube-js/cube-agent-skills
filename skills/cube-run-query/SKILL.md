@@ -2,28 +2,32 @@
 name: cube-run-query
 description: Run queries against a Cube deployment's semantic layer and interpret the results — through the Cube MCP tools when they are connected, or the Cube CLI from a terminal. Use whenever someone wants numbers out of Cube — pull a metric, check a total, compare periods, verify that a measure returns what it should, sanity-check a model change. Triggers on "how many", "what's the total", "show me revenue by month", "did that measure work", "what's our MoM growth", "pull the numbers for", and any request to verify a model change against real data. To find out what is queryable first use cube-explore-model; to change the model use cube-build-model; to save a result as a report or dashboard use cube-build-content.
 license: Apache-2.0
+compatibility: Needs the Cube MCP server (bundled in the Cube plugin, or the Cube connector) or the Cube CLI, and network access to Cube Cloud.
 ---
 
 # Run a query against Cube
 
 ## Choose the path
 
+Cube MCP tools are written `cube:<tool>` below: the `cube` server this plugin
+bundles. Through the Cube connector, the same tools carry the connector's name.
+
 **If the Cube MCP tools are available, use them.** They come from this
-plugin's `cube` server or the Cube connector — look for `searchDataModel`,
-`runQuery` and `chat`. They need no install or login step, and every call runs
+plugin's `cube` server or the Cube connector — look for `cube:searchDataModel`,
+`cube:runQuery` and `cube:chat`. They need no install or login step, and every call runs
 as the signed-in user, so row-level security applies exactly as in the UI.
 
-- **A specific number:** `searchDataModel` to find the view and the exact
-  member names, then `runQuery` with Cube SQL —
+- **A specific number:** `cube:searchDataModel` to find the view and the exact
+  member names, then `cube:runQuery` with Cube SQL —
   `SELECT status, MEASURE(count) FROM orders_view GROUP BY 1`. Never guess a
   member name.
-- **An open-ended question** ("why did signups drop in March"): `chat`, which
+- **An open-ended question** ("why did signups drop in March"): `cube:chat`, which
   runs Cube's own agent over the governed model and existing reports. Give the
   user the `cubeChatUrl` it returns so they can continue in Cube.
-- **Another deployment:** `listDeployments`, then pass its `deploymentId`.
-- **A dev branch:** pass the same `branchName` to `searchDataModel` and
-  `runQuery`, so the members you find are the ones the query sees.
-- **More than 100 rows:** page `runQuery` with `offset` until `hasMore` is
+- **Another deployment:** `cube:listDeployments`, then pass its `deploymentId`.
+- **A dev branch:** pass the same `branchName` to `cube:searchDataModel` and
+  `cube:runQuery`, so the members you find are the ones the query sees.
+- **More than 100 rows:** page `cube:runQuery` with `offset` until `hasMore` is
   false.
 
 Use the CLI path below when the MCP tools are not connected, or in a script or
@@ -113,9 +117,16 @@ where a measure's display name and unit live.
 
 The common case after `cube-build-model`: query the new measure on the dev
 branch before merging. Over MCP, pass the dev `branchName` to
-`searchDataModel` and `runQuery`. With the CLI, point the environment at the
-branch when getting meta, and query the deployment the same way — the token
-and URL are per-deployment, not per-branch.
+`cube:searchDataModel` and `cube:runQuery`. With the CLI, `$URL/cubejs-api/v1/load`
+always answers from production; a dev branch has its own endpoint under the
+same deployment URL, used with the same token:
+
+```bash
+cube deployments build-status "$DEPLOYMENT" --branch <dev-branch> --wait
+curl -s "$URL/dev-mode/<dev-branch>/cubejs-api/v1/load" -H "Authorization: $TOKEN" ...
+```
+
+Point `cube meta` at the branch the same way, with `"environment":"<dev-branch>"`.
 
 ## When something fails
 
@@ -124,4 +135,4 @@ and URL are per-deployment, not per-branch.
 | `deploymentUrl` is null | The deployment has never finished a build; check `cube deployments build-status` |
 | 401 from the load endpoint | Token expired — they are short-lived, just mint another |
 | `Member not found` | Wrong name or not exposed in that view — re-check `cube meta`, do not guess a variant |
-| Query hangs | A large uncached query; report it rather than silently retrying |
+| `{"error":"Continue wait"}` | The query is still running — send the same request again until data comes back. Tell the user if it keeps going past a minute or two |

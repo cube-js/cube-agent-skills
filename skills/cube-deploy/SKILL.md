@@ -2,6 +2,7 @@
 name: cube-deploy
 description: Manage Cube deployments and their lifecycle — create deployments, deploy a project, check build status, manage environments and environment variables, connect a GitHub repo, and tail logs — using the Cube CLI. Use whenever someone wants to ship, configure or debug a deployment rather than change the model inside one. Triggers on "deploy this", "did the build pass", "why did the build fail", "set an environment variable", "create a deployment", "connect our repo", "show me the logs", "what regions are available", "the deployment is down". To change model files use cube-build-model; for users and access use cube-admin.
 license: Apache-2.0
+compatibility: Needs the Cube MCP server (bundled in the Cube plugin, or the Cube connector) or the Cube CLI, and network access to Cube Cloud.
 ---
 
 # Deploy and operate Cube deployments
@@ -11,10 +12,13 @@ affect everyone using that deployment.
 
 ## Choose the path
 
+Cube MCP tools are written `cube:<tool>` below: the `cube` server this plugin
+bundles. Through the Cube connector, the same tools carry the connector's name.
+
 Deployment lifecycle is CLI-only: creating deployments, setting environment
 variables, connecting a repo, build status and logs. The Cube MCP tools can
-help diagnose — `listDeployments`, `getDeploymentEnv` (read-only, secrets
-redacted), and `getPreAggregationStatus` for a rollup that will not build —
+help diagnose — `cube:listDeployments`, `cube:getDeploymentEnv` (read-only, secrets
+redacted), and `cube:getPreAggregationStatus` for a rollup that will not build —
 but cannot change a deployment. Without a terminal and the Cube CLI, say so,
 and point the user to the deployment's settings in the Cube console.
 
@@ -31,21 +35,24 @@ cube context list
 ```bash
 cube deployments list
 cube deployments get <deployment>
-cube deployments create ...                 # scaffolds and builds a serving deployment
-cube deployments update <deployment> ...
+cube deployments create --name <name> --region <region>   # see `cube regions`
+cube deployments update <deployment> --name <name>
+cube deployments versions <deployment>                      # Cube versions available
+cube deployments update <deployment> --release-channel-version <version>
 cube deployments delete <deployment>
 cube regions
 ```
 
-Deployment creation always scaffolds the project and runs the first build.
-There is no separate bootstrap step.
+By default, creation scaffolds the project and runs the first build. There is
+no separate bootstrap step. Changing the Cube version rebuilds the deployment
+— say so before doing it.
 
 ## Shipping code
 
 Two different routes, and they do not mix:
 
 ```bash
-cube deploy <deployment>                     # upload the local project directory and build
+cube deploy <deployment> -m "<message>"      # upload the local project directory and build
 cube github connect <deployment> <repo> --installation <installation>  # link git and build
 ```
 
@@ -56,8 +63,10 @@ cube github repos <installation>
 cube github branches <owner/repo> --installation <installation>
 ```
 
-`cube deploy` pushes what is on your disk. `cube github connect` makes git the
-source of truth. Using both against one deployment means whichever ran last
+`cube deploy` pushes what is on your disk — to your active dev-mode branch if
+you have one, otherwise the deploy branch — and deletes remote files that are
+not in the local directory unless you pass `--keep-missing`. `cube github
+connect` makes git the source of truth. Using both against one deployment means whichever ran last
 wins, silently. Ask which the project uses before deploying.
 
 ## Build status — the answer to "did it work"
@@ -65,6 +74,8 @@ wins, silently. Ask which the project uses before deploying.
 ```bash
 cube deployments build-status <deployment>
 cube deployments build-status <deployment> --branch <branch>
+cube deployments build-status <deployment> --branch <branch> --wait   # blocks; non-zero exit on failure
+cube validate <deployment> --branch <branch>                          # model compile errors only
 ```
 
 Defaults to the active dev-mode branch if there is one, otherwise the deploy

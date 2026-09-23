@@ -3,6 +3,7 @@ name: cube-explore-content
 description: >-
   Find and inspect saved content in a Cube workspace — workbooks, dashboards, reports, folders and scheduled notifications — using the Cube CLI, or the Cube MCP tools for content you already have a link to. Use whenever someone wants to know what already exists rather than build something new: locate a dashboard, list reports, see what a report queries, find who a notification goes to, or check what saved content references a model field before renaming it. Triggers on "what dashboards do we have", "find the revenue report", "where is that workbook", "what's in this folder", "who gets this scheduled report", "is anything using this field". To create or edit content use cube-build-content; to inspect the semantic model itself use cube-explore-model.
 license: Apache-2.0
+compatibility: Needs the Cube MCP server (bundled in the Cube plugin, or the Cube connector) or the Cube CLI, and network access to Cube Cloud.
 ---
 
 # Explore saved Cube content
@@ -12,11 +13,14 @@ things people made, as opposed to the model underneath them.
 
 ## Choose the path
 
+Cube MCP tools are written `cube:<tool>` below: the `cube` server this plugin
+bundles. Through the Cube connector, the same tools carry the connector's name.
+
 Finding content is a CLI job: the Cube MCP tools cannot list workbooks,
 reports or notifications. They can read one you already have the id of —
-`readWorkbook`, `readReport` — and list folders with `manageFolders`
+`cube:readWorkbook`, `cube:readReport` — and list folders with `cube:manageFolders`
 (`action: "list"`). With only the MCP tools connected, ask the user for a link
-to the workbook or report, or ask `chat`, which searches existing reports.
+to the workbook or report, or ask `cube:chat`, which searches existing reports.
 
 ## Preflight
 
@@ -43,7 +47,8 @@ interchangeable:
 
 ```bash
 cube workspace list <deployment>            # everything in your workspace
-cube workspace shared <deployment>          # shared with you
+cube workspace list <deployment> --search <text>   # find by name
+cube workspace shared <deployment>          # items shared with embed users
 cube folders list <deployment>
 cube folders ancestors <deployment> <folder>   # where a folder sits in the tree
 ```
@@ -83,7 +88,9 @@ with recipients is something people are receiving.
 This is the half of impact analysis that `cube-explore-model` cannot do.
 Renaming a measure is only safe if no saved content queries it:
 
-1. `cube reports list <deployment> --json` to enumerate.
+1. `cube reports list <deployment> --json --first 100` to enumerate. It
+   returns one page: repeat with `--after <pageInfo.endCursor>` while
+   `pageInfo.hasNextPage` is true, and read every page's `items`.
 2. `cube reports get` the candidates and look at the saved query for the
    member name.
 3. Report every report that references it, by name and id.
@@ -105,5 +112,5 @@ means something different from across three hundred.
 | Symptom | Cause |
 | --- | --- |
 | Empty list | Real — a new deployment or an empty workspace. Say so rather than retrying |
-| 403 on a workbook | Not shared with this account; `cube workspace shared` shows what is |
+| 403 on a workbook | This account lacks access; `cube policies get --resource-type Workbook --resource-id <id>` shows who has it |
 | Report has no query | A report that was never configured — a finding, not an error |
