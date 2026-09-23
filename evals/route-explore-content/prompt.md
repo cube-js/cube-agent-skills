@@ -1,7 +1,7 @@
 ---
 description: Routes a saved-content impact question to cube-explore-content
 tags: [routing, cli]
-max_turns: 8
+max_turns: 12
 allowed_tools: [Skill, Read, Glob, Grep]
 ---
 

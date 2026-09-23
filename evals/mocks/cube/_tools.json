@@ -1,0 +1,654 @@
+{
+  "tools": [
+    {
+      "name": "listDeployments",
+      "description": "Returns all Cube deployments and their agents that you can access. Use this to discover valid deploymentId values before passing them to any other tool: every tool takes an optional deploymentId and defaults to the deployment this session connected to, so pass one explicitly whenever the user asks about a different deployment. Passing an id not listed here is rejected. Every deployment supports the Auto agent (pass agentId: null to chat) — the default agent used when no specific agent is selected — in addition to any configured agents listed.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      }
+    },
+    {
+      "name": "searchDataModel",
+      "description": "Search the Cube semantic model by similarity — views and their measures & dimensions — to discover what is queryable. Returns compact records (name, title, description, type) you can then reference in a runQuery SQL statement. Call this before runQuery to find the exact view and member names, and pass the same `branchName` to both so the members you find are the ones the query will see: on a dev branch this reports THAT branch’s un-deployed model, including members that do not exist in production yet. The model searched is reported back as `branchName` (null = deployed model).",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchName": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Dev branch to run this call against, as returned by startDataModelEdit. The call then runs on that branch’s dev worker — its un-deployed data model, including members that exist only there, and its own agent configuration (skills, rules, spaces) — which is how a branch is verified before it is deployed. Only dev branches (`dev-<user>-<hash>`) run a worker that can serve a request; any other branch is rejected rather than silently answered from production. Omit to use the branch this session is connected to (the deployed model, unless the endpoint named one); pass null to force the deployed model. The branch actually used is reported back as `branchName` (null = deployed model)."
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "limit": {
+            "description": "Max number of views to return (default 50).",
+            "exclusiveMinimum": 0,
+            "maximum": 200,
+            "type": "integer"
+          },
+          "query": {
+            "description": "Optional natural-language query, matched by semantic similarity against views and their members (names, titles, descriptions, and AI context) — so it finds relevant concepts even without a literal keyword overlap. Prefer a short descriptive phrase over single keywords — e.g. \"monthly revenue\", \"customer churn\", \"proof of concept deals\". Omit to list the whole model.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "runQuery",
+      "description": "Run a Cube SQL query against the Cube SQL API (PostgreSQL dialect — see https://docs.cube.dev/reference/core-data-apis/sql-api) and return the result rows. Returns `schema` (columns), a page of `data` rows (page size 100), and `hasMore`/`totalRows` for pagination via `offset`. Read-only — it does not modify the model, workbooks, or reports. Use searchDataModel first to find the exact cubes/views and members to query — never guess member names, and call it with the same `branchName` so it reports the same model this query will run against. Pass `branchName` to run against a dev branch's un-deployed model instead of the deployed one; the branch the query actually ran on comes back as `branchName` (null = deployed model). ## CubeSQL Query Rules - When querying measures, always use MEASURE() function, e.g. MEASURE(revenue), do not nest MEASURE() in other functions. SUM(MEASURE(revenue)) IS INVALID and NOT ALLOWED, use MEASURE(revenue) instead. - A condition that narrows the WHOLE result (\"only completed orders\", \"just the US\") is a WHERE clause on the query, and every measure stays MEASURE(): SELECT DATE_TRUNC('month', created_at), MEASURE(revenue) FROM orders_view WHERE status = 'completed' GROUP BY 1.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchName": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Dev branch to run this call against, as returned by startDataModelEdit. The call then runs on that branch’s dev worker — its un-deployed data model, including members that exist only there, and its own agent configuration (skills, rules, spaces) — which is how a branch is verified before it is deployed. Only dev branches (`dev-<user>-<hash>`) run a worker that can serve a request; any other branch is rejected rather than silently answered from production. Omit to use the branch this session is connected to (the deployed model, unless the endpoint named one); pass null to force the deployed model. The branch actually used is reported back as `branchName` (null = deployed model)."
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "offset": {
+            "description": "Zero-based row offset of the page to return. Page size is fixed at 100; paginate by incrementing offset until hasMore is false.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sqlQuery": {
+            "description": "A Cube SQL query (PostgreSQL dialect) against the semantic layer — e.g. `SELECT status, MEASURE(count) FROM orders GROUP BY 1`. Use searchDataModel first to find the cubes/views and members to query.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "timezone": {
+            "description": "IANA time zone to run the query in, e.g. `America/New_York`. Omit to use the deployment default (UTC unless configured).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sqlQuery"
+        ]
+      }
+    },
+    {
+      "name": "chat",
+      "description": "Ask a question about your data through the Cube semantic layer. The agent queries the existing semantic model, runs SQL against your governed metrics and dimensions, and searches existing reports to ground its answers. This tool is read-only — it does not modify the data model, files, workbooks, or reports. If the user asks for a chart, graph, table, visualization, or dashboard-style output, answer in text because the visualize tool is not available for this client. Pass `branchName` to run the turn against a dev branch's un-deployed data model AND its agent configuration (skills, rules, spaces), which is how a branch is exercised before it is deployed; the branch used comes back as `branchName` (null = deployed model). A conversation stays on the branch it started on, so omit `branchName` when resuming with a `chatId` and start a new chat to ask the same question of another branch. The response's `cubeChatUrl` field is the only valid link to this conversation in Cube — no other URL opens it. It is null when the conversation has no linkable Cube page.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "agentId": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Agent ID to use for this request. When omitted or null, the deployment default (Auto) agent is used. Must belong to the target deployment."
+          },
+          "branchName": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Dev branch to run this call against, as returned by startDataModelEdit. The call then runs on that branch’s dev worker — its un-deployed data model, including members that exist only there, and its own agent configuration (skills, rules, spaces) — which is how a branch is verified before it is deployed. Only dev branches (`dev-<user>-<hash>`) run a worker that can serve a request; any other branch is rejected rather than silently answered from production. Omit to use the branch this session is connected to (the deployed model, unless the endpoint named one); pass null to force the deployed model. The branch actually used is reported back as `branchName` (null = deployed model)."
+          },
+          "chatId": {
+            "description": "Chat ID to resume an existing conversation.",
+            "type": "string"
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "input": {
+            "description": "User input for the chat.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "listDataModelFiles",
+      "description": "List the Cube semantic model SOURCE files (the raw `.yml` / `.js` / `.py` schema files that define cubes and views) on a branch. Use this to discover which files to read/edit — it complements searchDataModel, which returns the compiled meta rather than the editable source. Data-model editing workflow (edit the Cube semantic model / schema YAML on a dev branch, never production): startDataModelEdit (enter dev mode → dev branchName) → readDataModelFile / writeDataModelFile / deleteDataModelFile (pass that branchName) → getDataModelChanges (review the diff) → runQuery with that same branchName (verify the edited model returns the right rows before deploying). Use listDataModelFiles / readDataModelFile to discover the current model source, getBranchDiff to see what ANY branch changed relative to the deploy branch, and getDeploymentEnv to check the deployment’s configuration. Call getBranchState whenever you need to know which branch you and the USER are each on. Your edits stay invisible — to the user, to the Cube UI and to anyone reviewing — until commitDataModelChanges commits the dev branch onto its parent; then offer switchUserBranch so the user is looking at that branch, commitToNewBranch to put the work on a branch of its own, discardDataModelChanges to start over, and mergeToDefaultBranch (only when the user asks to publish) to make it live.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchName": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Branch to read from. Omit to use the branch this session is connected to (the deploy branch, unless the endpoint named one); pass null to force the deploy branch."
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "readDataModelFile",
+      "description": "Read the raw source of one Cube semantic model file (the editable YAML/JS defining a cube or view). Read this before writeDataModelFile so you edit on top of the current content rather than overwriting it. Data-model editing workflow (edit the Cube semantic model / schema YAML on a dev branch, never production): startDataModelEdit (enter dev mode → dev branchName) → readDataModelFile / writeDataModelFile / deleteDataModelFile (pass that branchName) → getDataModelChanges (review the diff) → runQuery with that same branchName (verify the edited model returns the right rows before deploying). Use listDataModelFiles / readDataModelFile to discover the current model source, getBranchDiff to see what ANY branch changed relative to the deploy branch, and getDeploymentEnv to check the deployment’s configuration. Call getBranchState whenever you need to know which branch you and the USER are each on. Your edits stay invisible — to the user, to the Cube UI and to anyone reviewing — until commitDataModelChanges commits the dev branch onto its parent; then offer switchUserBranch so the user is looking at that branch, commitToNewBranch to put the work on a branch of its own, discardDataModelChanges to start over, and mergeToDefaultBranch (only when the user asks to publish) to make it live.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchName": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Branch to read from. Omit to use the branch this session is connected to (the deploy branch, unless the endpoint named one); pass null to force the deploy branch."
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "filePath": {
+            "description": "Path of the schema source file within the deployment project, e.g. `model/cubes/orders.yml` or `model/views/orders.yml`.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "filePath"
+        ]
+      }
+    },
+    {
+      "name": "startDataModelEdit",
+      "description": "Enter development mode and start a dev worker. Returns the `branchName` you MUST pass to writeDataModelFile / deleteDataModelFile / getDataModelChanges. Editing always happens on this dev branch — the deploy branch is never writable. Call this first, before any edit. To RESUME a specific edit later, pass the same feature-branch name you used before; omitting `branchName` starts a NEW edit session each call, so reuse the returned branchName for all follow-up tools rather than calling this again. Data-model editing workflow (edit the Cube semantic model / schema YAML on a dev branch, never production): startDataModelEdit (enter dev mode → dev branchName) → readDataModelFile / writeDataModelFile / deleteDataModelFile (pass that branchName) → getDataModelChanges (review the diff) → runQuery with that same branchName (verify the edited model returns the right rows before deploying). Use listDataModelFiles / readDataModelFile to discover the current model source, getBranchDiff to see what ANY branch changed relative to the deploy branch, and getDeploymentEnv to check the deployment’s configuration. Call getBranchState whenever you need to know which branch you and the USER are each on. Your edits stay invisible — to the user, to the Cube UI and to anyone reviewing — until commitDataModelChanges commits the dev branch onto its parent; then offer switchUserBranch so the user is looking at that branch, commitToNewBranch to put the work on a branch of its own, discardDataModelChanges to start over, and mergeToDefaultBranch (only when the user asks to publish) to make it live.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseBranch": {
+            "description": "Optional branch to fork from. Defaults to the deployment’s deploy branch. The editable dev branch name is assigned by the server and returned as `branchName`.",
+            "type": "string"
+          },
+          "branchName": {
+            "description": "Optional label for the feature branch this edit lives on (e.g. `add-revenue-measure`); it becomes the dev branch’s parent. Auto-generated when omitted. The editable dev branch is derived from it and returned as `branchName` in the result.",
+            "type": "string"
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "writeDataModelFile",
+      "description": "Create or overwrite a Cube semantic model source file on your dev branch (whole-file replacement — send the COMPLETE content). After saving, the dev worker recompiles the model and this returns `valid` plus any `validationError`. If it does not compile, fix the content and call this again — the file stays saved so you can iterate. Requires the dev branchName from startDataModelEdit. Data-model editing workflow (edit the Cube semantic model / schema YAML on a dev branch, never production): startDataModelEdit (enter dev mode → dev branchName) → readDataModelFile / writeDataModelFile / deleteDataModelFile (pass that branchName) → getDataModelChanges (review the diff) → runQuery with that same branchName (verify the edited model returns the right rows before deploying). Use listDataModelFiles / readDataModelFile to discover the current model source, getBranchDiff to see what ANY branch changed relative to the deploy branch, and getDeploymentEnv to check the deployment’s configuration. Call getBranchState whenever you need to know which branch you and the USER are each on. Your edits stay invisible — to the user, to the Cube UI and to anyone reviewing — until commitDataModelChanges commits the dev branch onto its parent; then offer switchUserBranch so the user is looking at that branch, commitToNewBranch to put the work on a branch of its own, discardDataModelChanges to start over, and mergeToDefaultBranch (only when the user asks to publish) to make it live.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchName": {
+            "description": "The dev branch to edit on — the `branchName` returned by startDataModelEdit.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "content": {
+            "description": "The COMPLETE new contents of the file (whole-file replacement, not a patch). For YAML, send the full cube/view definition. Use deleteDataModelFile to remove a file.",
+            "type": "string"
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "filePath": {
+            "description": "Path of the schema source file within the deployment project, e.g. `model/cubes/orders.yml` or `model/views/orders.yml`.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "branchName",
+          "filePath",
+          "content"
+        ]
+      }
+    },
+    {
+      "name": "getDataModelChanges",
+      "description": "Show the diff of your dev branch against its parent — the pending data-model changes. Use this to review edits before committing. Data-model editing workflow (edit the Cube semantic model / schema YAML on a dev branch, never production): startDataModelEdit (enter dev mode → dev branchName) → readDataModelFile / writeDataModelFile / deleteDataModelFile (pass that branchName) → getDataModelChanges (review the diff) → runQuery with that same branchName (verify the edited model returns the right rows before deploying). Use listDataModelFiles / readDataModelFile to discover the current model source, getBranchDiff to see what ANY branch changed relative to the deploy branch, and getDeploymentEnv to check the deployment’s configuration. Call getBranchState whenever you need to know which branch you and the USER are each on. Your edits stay invisible — to the user, to the Cube UI and to anyone reviewing — until commitDataModelChanges commits the dev branch onto its parent; then offer switchUserBranch so the user is looking at that branch, commitToNewBranch to put the work on a branch of its own, discardDataModelChanges to start over, and mergeToDefaultBranch (only when the user asks to publish) to make it live.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchName": {
+            "description": "The dev branch to edit on — the `branchName` returned by startDataModelEdit.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "branchName"
+        ]
+      }
+    },
+    {
+      "name": "commitDataModelChanges",
+      "description": "Commit the dev branch’s edits onto the branch it was created from. This is what makes your work exist outside the development session: until you call it, everything writeDataModelFile saved lives only in the dev worker’s working copy — it is not on any branch the user can select, nobody reviewing sees it, and telling the user the change is ready would be wrong. Call it once the model compiles; the dev branch stays usable afterwards so you can keep editing. Usually the parent is an ordinary branch and this does NOT touch production — but a dev branch created from the deployment’s default branch publishes live, and that call is refused until the user has confirmed it. Afterwards, name the branch it reports (`targetBranchName`) to the user and offer switchUserBranch so they can look at it. Data-model editing workflow (edit the Cube semantic model / schema YAML on a dev branch, never production): startDataModelEdit (enter dev mode → dev branchName) → readDataModelFile / writeDataModelFile / deleteDataModelFile (pass that branchName) → getDataModelChanges (review the diff) → runQuery with that same branchName (verify the edited model returns the right rows before deploying). Use listDataModelFiles / readDataModelFile to discover the current model source, getBranchDiff to see what ANY branch changed relative to the deploy branch, and getDeploymentEnv to check the deployment’s configuration. Call getBranchState whenever you need to know which branch you and the USER are each on. Your edits stay invisible — to the user, to the Cube UI and to anyone reviewing — until commitDataModelChanges commits the dev branch onto its parent; then offer switchUserBranch so the user is looking at that branch, commitToNewBranch to put the work on a branch of its own, discardDataModelChanges to start over, and mergeToDefaultBranch (only when the user asks to publish) to make it live.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchName": {
+            "description": "The dev branch to edit on — the `branchName` returned by startDataModelEdit.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "confirmPublishToDefaultBranch": {
+            "description": "Only needed when the dev branch was created from the deployment’s default (production) branch, where committing makes the changes live — the call is refused without it there. Set it only after the user has explicitly confirmed they want that, never to retry a refusal on your own.",
+            "type": "boolean"
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "message": {
+            "description": "Optional commit message summarizing the changes. A default is generated when omitted.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "branchName"
+        ]
+      }
+    },
+    {
+      "name": "mergeToDefaultBranch",
+      "description": "Merge a branch into the deployment’s default (production) branch, making its changes live for everyone. This is a publish step with real consequences, so call it ONLY when the user has explicitly asked to publish or merge to production — never on your own initiative after committing. Commit first with commitDataModelChanges: this merges committed branches, not the development session. Prefer letting the user test the branch first (switchUserBranch). Data-model editing workflow (edit the Cube semantic model / schema YAML on a dev branch, never production): startDataModelEdit (enter dev mode → dev branchName) → readDataModelFile / writeDataModelFile / deleteDataModelFile (pass that branchName) → getDataModelChanges (review the diff) → runQuery with that same branchName (verify the edited model returns the right rows before deploying). Use listDataModelFiles / readDataModelFile to discover the current model source, getBranchDiff to see what ANY branch changed relative to the deploy branch, and getDeploymentEnv to check the deployment’s configuration. Call getBranchState whenever you need to know which branch you and the USER are each on. Your edits stay invisible — to the user, to the Cube UI and to anyone reviewing — until commitDataModelChanges commits the dev branch onto its parent; then offer switchUserBranch so the user is looking at that branch, commitToNewBranch to put the work on a branch of its own, discardDataModelChanges to start over, and mergeToDefaultBranch (only when the user asks to publish) to make it live.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchName": {
+            "description": "The shared branch to publish. Never a `dev-...` branch — commit that first with commitDataModelChanges and publish the branch it reports. Omit to publish the branch `devBranchName`’s session was created from.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "devBranchName": {
+            "description": "A dev branch whose PARENT should be published, when you have the dev branch rather than the shared name. Ignored when branchName is given.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "message": {
+            "description": "Optional merge commit message. A default is generated when omitted.",
+            "type": "string"
+          },
+          "removeBranchAfterMerge": {
+            "description": "Whether to delete the branch after merging it. Defaults to true.",
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "switchUserBranch",
+      "description": "Switch the USER over to a branch in the Cube console, so they can see and test what was committed to it — the same action as the branch switcher in the UI. It changes what they are looking at, so call it only when the user asks to be moved onto a branch, or agrees when you offer — never unprompted. Pass the shared branch a commit landed on, never a `dev-...` personal branch and never the default (production) branch. Data-model editing workflow (edit the Cube semantic model / schema YAML on a dev branch, never production): startDataModelEdit (enter dev mode → dev branchName) → readDataModelFile / writeDataModelFile / deleteDataModelFile (pass that branchName) → getDataModelChanges (review the diff) → runQuery with that same branchName (verify the edited model returns the right rows before deploying). Use listDataModelFiles / readDataModelFile to discover the current model source, getBranchDiff to see what ANY branch changed relative to the deploy branch, and getDeploymentEnv to check the deployment’s configuration. Call getBranchState whenever you need to know which branch you and the USER are each on. Your edits stay invisible — to the user, to the Cube UI and to anyone reviewing — until commitDataModelChanges commits the dev branch onto its parent; then offer switchUserBranch so the user is looking at that branch, commitToNewBranch to put the work on a branch of its own, discardDataModelChanges to start over, and mergeToDefaultBranch (only when the user asks to publish) to make it live.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchName": {
+            "description": "The branch to put the user on — normally the `targetBranchName` commitDataModelChanges reported. Never a `dev-...` branch and never the deploy branch.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "branchName"
+        ]
+      }
+    },
+    {
+      "name": "getBranchState",
+      "description": "Report which branch this session works on, which branch the USER is looking at in the Cube console, which branch is the deployment’s production branch, and whether the branch has edits that are not committed yet. Call it before editing (so work does not land somewhere the user will never look) and after committing (to see whether the user still has to be switched over). Data-model editing workflow (edit the Cube semantic model / schema YAML on a dev branch, never production): startDataModelEdit (enter dev mode → dev branchName) → readDataModelFile / writeDataModelFile / deleteDataModelFile (pass that branchName) → getDataModelChanges (review the diff) → runQuery with that same branchName (verify the edited model returns the right rows before deploying). Use listDataModelFiles / readDataModelFile to discover the current model source, getBranchDiff to see what ANY branch changed relative to the deploy branch, and getDeploymentEnv to check the deployment’s configuration. Call getBranchState whenever you need to know which branch you and the USER are each on. Your edits stay invisible — to the user, to the Cube UI and to anyone reviewing — until commitDataModelChanges commits the dev branch onto its parent; then offer switchUserBranch so the user is looking at that branch, commitToNewBranch to put the work on a branch of its own, discardDataModelChanges to start over, and mergeToDefaultBranch (only when the user asks to publish) to make it live.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "branchName": {
+            "description": "Optional branch to describe. Defaults to the branch this session is connected to, then the branch the user is on, then the deploy branch. Any branch works.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "createWorkbook",
+      "description": "Create a new empty workbook — the container that holds reports and a dashboard. Returns its numeric `workbookId` (which every other dashboard tool needs) and a `url` you can share with the user to open the new dashboard. Do NOT create a workbook if you were given one to build into. Dashboard-authoring workflow (use together): createWorkbook → createReport (one per chart/visualization) → updateDashboard → publishDashboard; readWorkbook reads the current state. To manage an EXISTING report (standalone or workbook-bound) rather than recreating it: readReport, updateReport (edit its title / SQL / visualization / placement in place, keeping its reportId), deleteReport.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "description": {
+            "description": "Optional description shown to viewers. Stored on the workbook.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Name of the workbook (also the dashboard title).",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "createReport",
+      "description": "Save a query + its visualization as a Report, and return its numeric `reportId` and a `url`. The report always carries a chartCategory: \"table\" (default), \"vega\" (pass vegaSpec for a Vega-Lite graph), \"kpi\" (pass kpiChartSpec for a KPI metric tile), \"html\" (pass htmlChartSpec), \"map\" (pass mapChartSpec), or \"sankey\" (pass sankeyChartSpec for a flow diagram). WHERE IT LANDS is decided by `workbookId`: WITH a workbookId the report becomes a tab of that workbook and can be referenced by a CHART widget on that workbook's dashboard — create it here first, then pass the returned `reportId` to updateDashboard. WITHOUT a workbookId it is a standalone exploration at the workspace root (or under `folderId`), which no dashboard widget can reference. Never invent a reportId. Dashboard-authoring workflow (use together): createWorkbook → createReport (one per chart/visualization) → updateDashboard → publishDashboard; readWorkbook reads the current state. To manage an EXISTING report (standalone or workbook-bound) rather than recreating it: readReport, updateReport (edit its title / SQL / visualization / placement in place, keeping its reportId), deleteReport.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "chartCategory": {
+            "default": "table",
+            "enum": [
+              "table",
+              "vega",
+              "kpi",
+              "html",
+              "map",
+              "sankey"
+            ],
+            "type": "string",
+            "description": "How this report renders."
+          },
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "folderId": {
+            "description": "Optional workspace folder for a standalone report (ignored when workbookId is set).",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "sqlQuery": {
+            "description": "The SQL query (against the Cube semantic layer) that powers this report.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": {
+            "description": "Report title shown on the chart tile.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "vegaSpec": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Vega-Lite v5 chart spec — REQUIRED when chartCategory is \"vega\". Its field names must match the SQL result columns; always provide empty data with 'table' name so it can be inlined later. (Abridged in this eval fixture.)"
+          },
+          "kpiChartSpec": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "KPI chart configuration — REQUIRED when chartCategory is \"kpi\". (Abridged in this eval fixture.)"
+          },
+          "tableChartSpec": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Table chart configuration — used when chartCategory is \"table\". Optional. (Abridged in this eval fixture.)"
+          },
+          "htmlChartSpec": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "HTML chart configuration — REQUIRED when chartCategory is \"html\". (Abridged in this eval fixture.)"
+          },
+          "mapChartSpec": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Map chart configuration — REQUIRED when chartCategory is \"map\". (Abridged in this eval fixture.)"
+          },
+          "sankeyChartSpec": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Sankey chart configuration — REQUIRED when chartCategory is \"sankey\". (Abridged in this eval fixture.)"
+          },
+          "workbookId": {
+            "description": "The workbook this report belongs to (from createWorkbook). REQUIRED if the report will become a CHART widget on that workbook's dashboard.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "sqlQuery"
+        ]
+      }
+    },
+    {
+      "name": "readWorkbook",
+      "description": "Read a workbook: its name and its current dashboard `dashboardDraft` and `dashboardPublished` configs. ALWAYS call this before updateDashboard so you can pass the current draft as `oldDashboardConfig` (concurrency guard) and edit on top of it rather than overwriting. Dashboard-authoring workflow (use together): createWorkbook → createReport (one per chart/visualization) → updateDashboard → publishDashboard; readWorkbook reads the current state. To manage an EXISTING report (standalone or workbook-bound) rather than recreating it: readReport, updateReport (edit its title / SQL / visualization / placement in place, keeping its reportId), deleteReport.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "workbookId": {
+            "description": "The workbook id to read.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "workbookId"
+        ]
+      }
+    },
+    {
+      "name": "updateDashboard",
+      "description": "Save the dashboard layout (the full `widgets` array) to the workbook DRAFT. This does not go live until publishDashboard. Send the COMPLETE widget set every time. CHART widgets must reference a real reportId from a createReport call made WITH this same workbookId. Grid rules: 12 columns (x + w ≤ 12); CHART h≈11. Pass `oldDashboardConfig` (from readWorkbook) for a safe concurrent update. Returns a `url` to the updated dashboard. Dashboard-authoring workflow (use together): createWorkbook → createReport (one per chart/visualization) → updateDashboard → publishDashboard; readWorkbook reads the current state. To manage an EXISTING report (standalone or workbook-bound) rather than recreating it: readReport, updateReport (edit its title / SQL / visualization / placement in place, keeping its reportId), deleteReport.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "oldDashboardConfig": {
+            "anyOf": [
+              {
+                "additionalProperties": {},
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optimistic concurrency guard: the exact dashboard config you based this edit on (from readWorkbook.dashboardDraft), passed back verbatim. Omit (or pass null) for a brand-new / widget-less draft."
+          },
+          "widgets": {
+            "description": "The widgets that make up the dashboard.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "id": {
+                  "description": "Stable unique id for this widget within the dashboard.",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "type": "string"
+                },
+                "type": {
+                  "enum": [
+                    "CHART",
+                    "TEXT",
+                    "FILTER",
+                    "TIME_GRAIN",
+                    "FIELD",
+                    "PARENT",
+                    "AI",
+                    "CONTAINER",
+                    "SPACER",
+                    "DIVIDER"
+                  ],
+                  "type": "string",
+                  "description": "Widget kind. CHART references a saved report via config.reportId."
+                },
+                "position": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "x",
+                    "y",
+                    "w",
+                    "h"
+                  ],
+                  "description": "Grid placement on the 12-column dashboard grid.",
+                  "properties": {
+                    "x": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 11
+                    },
+                    "y": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "w": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 12
+                    },
+                    "h": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  }
+                },
+                "config": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "description": "Type-specific config. CHART: { reportId:number, title?:string }. TEXT: { content:\"markdown\" }. (Abridged in this eval fixture.)"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "position"
+              ]
+            }
+          },
+          "workbookId": {
+            "description": "The workbook whose dashboard draft to update.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "workbookId",
+          "widgets"
+        ]
+      }
+    },
+    {
+      "name": "publishDashboard",
+      "description": "Publish the workbook’s current dashboard draft to make it live. Idempotent — publishing an unchanged draft is a no-op (reported via `warning`). Returns the live dashboard `url` (share this with the user) and its `dashboardPublicId`. Only publish after updateDashboard returned success and you have verified the layout. Dashboard-authoring workflow (use together): createWorkbook → createReport (one per chart/visualization) → updateDashboard → publishDashboard; readWorkbook reads the current state. To manage an EXISTING report (standalone or workbook-bound) rather than recreating it: readReport, updateReport (edit its title / SQL / visualization / placement in place, keeping its reportId), deleteReport.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deploymentId": {
+            "description": "Deployment to run this call against. Defaults to the deployment this session is connected to. Call listDeployments to discover valid ids — passing one you were not offered is rejected.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "workbookId": {
+            "description": "The workbook whose current draft to publish live.",
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "workbookId"
+        ]
+      }
+    }
+  ]
+}

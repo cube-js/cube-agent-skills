@@ -1,7 +1,7 @@
 ---
 description: Routes a failed build to cube-deploy
 tags: [routing, cli]
-max_turns: 8
+max_turns: 12
 allowed_tools: [Skill, Read, Glob, Grep]
 ---
 
