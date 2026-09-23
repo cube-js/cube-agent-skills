@@ -3,6 +3,7 @@ name: cube-embed
 description: >-
   Set up and debug Cube embedded analytics — embed sessions, embed tokens, embeddable dashboards and embed tenants — using the Cube CLI. Use whenever someone is shipping Cube analytics inside their own product: mint a session for an end user, enable a dashboard for embedding, set up multi-tenant isolation so each customer sees only their data, or debug why an embedded view is empty or unauthorized. Triggers on "embed this dashboard", "embedded analytics", "our customers need to see", "multi-tenant analytics", "the iframe is blank", "embed token", "sign the embed URL", "customer-facing dashboard". For internal access control use cube-admin; for the dashboards themselves use cube-build-content.
 license: Apache-2.0
+compatibility: Needs the Cube CLI, installed and logged in, and network access to Cube Cloud.
 ---
 
 # Embed Cube in your product
@@ -68,8 +69,16 @@ user's access until it expires.
    security context carries. Check with `cube-explore-model`; if it does not,
    stop and fix the model first.
 4. Mint a session for a **test** embed user of one tenant.
-5. Verify that user sees only that tenant's rows — query the same measure via
-   `cube-run-query` with a different context and confirm the numbers differ.
+5. Verify that user sees only that tenant's rows. `cube deployments token`
+   carries *your* context, so it cannot test this. Mint a token for each of
+   two tenants' security contexts, query the same measure with each through
+   the `cube-run-query` endpoint, and confirm the numbers differ:
+
+   ```bash
+   cube environments create-token <deployment> <environment> --security-context '{"tenant_id":"<a>"}'
+   ```
+
+   The token is a credential — use it, never print it.
 
 Step 5 is the one that catches broken isolation, and it is the one people
 skip because step 4 appeared to work.

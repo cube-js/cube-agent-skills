@@ -3,6 +3,7 @@ name: cube-configure-agent
 description: >-
   Inspect and tune Cube's in-product AI agent — its rules, certified queries and Agent Skills — by authoring markdown in the semantic model, through the Cube MCP tools or the Cube CLI. Use whenever someone wants the Cube agent to answer better: teach it a business definition, stop it making a recurring mistake, certify a trusted query, capture a repeatable workflow as a skill, or find out why it answered the way it did. Triggers on "the agent keeps getting X wrong", "teach the agent that", "make the agent always", "add a certified query", "create an agent skill", "why did the agent say that", "what rules does the agent have". To change the underlying model use cube-build-model; to explore what is queryable use cube-explore-model.
 license: Apache-2.0
+compatibility: Needs the Cube MCP server (bundled in the Cube plugin, or the Cube connector) or the Cube CLI, and network access to Cube Cloud.
 ---
 
 # Configure the Cube agent
@@ -13,14 +14,17 @@ dev-mode workflow from `cube-build-model` applies.
 
 ## Choose the path
 
+Cube MCP tools are written `cube:<tool>` below: the `cube` server this plugin
+bundles. Through the Cube connector, the same tools carry the connector's name.
+
 **If the Cube MCP tools are available** (this plugin's
 `cube` server or the Cube connector), edit agent configuration like any other model file, with the
-`cube-build-model` loop: `startDataModelEdit`, then `readDataModelFile` and
-`writeDataModelFile` under `agents/`, then `commitDataModelChanges`. Two
+`cube-build-model` loop: `cube:startDataModelEdit`, then `cube:readDataModelFile` and
+`cube:writeDataModelFile` under `agents/`, then `cube:commitDataModelChanges`. Two
 things the MCP path does better:
 
-- `listDeployments` returns each deployment's agents.
-- `chat` with the dev `branchName` runs Cube's agent against that branch's
+- `cube:listDeployments` returns each deployment's agents.
+- `cube:chat` with the dev `branchName` runs Cube's agent against that branch's
   rules, certified queries and skills. Ask the question that went wrong before
   and after the change, in two separate chats — a chat stays on the branch it
   started on.
@@ -50,14 +54,23 @@ model files below.
 
 ## Agent config lives in the data model
 
-Under `agents/` in the project, as markdown:
+Under `agents/` in the project — settings in YAML, everything else as
+markdown:
 
 ```
 agents/
   rules/               always-on instructions
   certified_queries/   trusted, named queries
   skills/              named multi-step workflows, run from the / menu
+  config.yml           agent settings: llm, runtime, accessible_views, memory_mode
 ```
+
+Deployments created before April 30, 2026 read these files only when
+`CUBE_CLOUD_AGENTS_CONFIG_ENABLED=true` is set — check with
+`cube variables list <deployment>` or the MCP `cube:getDeploymentEnv`. Without
+it, writes here change nothing, silently. With several agents, rules,
+certified queries and skills can also sit in per-space subdirectories such as
+`agents/rules/<space>/`.
 
 Read and write them with `cube data-model`, on a dev-mode branch:
 

@@ -19,6 +19,7 @@ SKILLS_DIR = Path(__file__).resolve().parent.parent / "skills"
 # Spec limits.
 MAX_NAME = 64
 MAX_DESCRIPTION = 1024
+MAX_COMPATIBILITY = 500
 # Not a spec rule — the spec recommends keeping SKILL.md short so activation
 # stays cheap. We enforce it as a warning so long skills get split into
 # references/ rather than silently bloating every agent's context.
@@ -111,6 +112,12 @@ def check(skill_dir: Path) -> None:
     elif len(description) > MAX_DESCRIPTION:
         errors.append(
             f"{where}: description is {len(description)} chars, max is {MAX_DESCRIPTION}"
+        )
+
+    compatibility = fields.get("compatibility")
+    if compatibility is not None and len(compatibility) > MAX_COMPATIBILITY:
+        errors.append(
+            f"{where}: compatibility is {len(compatibility)} chars, max is {MAX_COMPATIBILITY}"
         )
 
     lines = text.count("\n") + 1
