@@ -10,6 +10,10 @@ license: Apache-2.0
 The widest surface in this plugin, and the one where mistakes affect other
 people. Everything here is real: removing a user removes their access.
 
+CLI-only. The Cube MCP tools do not administer users, groups or access.
+Without a terminal and the Cube CLI, say so, and point the user to
+**Admin** in the Cube console.
+
 ## Preflight
 
 ```bash

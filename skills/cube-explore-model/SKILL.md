@@ -1,6 +1,6 @@
 ---
 name: cube-explore-model
-description: Search and inspect a Cube semantic model — cubes, views, measures, dimensions, joins, and the files they live in — using the Cube CLI. Use whenever someone wants to know what data is available in Cube, where a metric is defined, which cube a field belongs to, how two cubes join, or what a change would affect. Triggers on "what can I query", "what measures do we have", "where is revenue defined", "show me the data model", "what's in this deployment", "which cube has customer email", and impact questions like "what breaks if I rename this". Read the model with this skill before changing it. To edit the model use cube-build-model; to run a query and get numbers back use cube-run-query; to browse workbooks, dashboards and reports use cube-explore-content.
+description: Search and inspect a Cube semantic model — cubes, views, measures, dimensions, joins, and the files they live in — through the Cube MCP tools or the Cube CLI. Use whenever someone wants to know what data is available in Cube, where a metric is defined, which cube a field belongs to, how two cubes join, or what a change would affect. Triggers on "what can I query", "what measures do we have", "where is revenue defined", "show me the data model", "what's in this deployment", "which cube has customer email", and impact questions like "what breaks if I rename this". Read the model with this skill before changing it. To edit the model use cube-build-model; to run a query and get numbers back use cube-run-query; to browse workbooks, dashboards and reports use cube-explore-content.
 license: Apache-2.0
 ---
 
@@ -9,7 +9,27 @@ license: Apache-2.0
 Read-only. Nothing here changes state, so you never need a dev-mode branch —
 which also means you can run any of it before you know what you're doing.
 
-## Preflight
+## Choose the path
+
+**If the Cube MCP tools are available** (this plugin's
+`cube` server or the Cube connector), use them — no install, no login step:
+
+| Question | MCP tool |
+| --- | --- |
+| What can I query; which view has a field | `searchDataModel` — the compiled model, searched by meaning. Omit `query` to list everything |
+| Which files exist; what does one say | `listDataModelFiles`, `readDataModelFile` |
+| What did a branch change | `getBranchDiff` |
+| Which deployments exist | `listDeployments`, then pass `deploymentId` |
+
+`searchDataModel` plays the role of `cube meta` below: it answers availability
+("is this exposed"), and the files answer authorship ("where is this
+written"). That distinction, and the impact-analysis checklist, hold on both
+paths.
+
+Use the CLI path when the MCP tools are not connected, when you need every
+file's content in one request for a text search, or for `file-hashes`.
+
+## Preflight (CLI)
 
 Run this once at the start. Stop and report if either check fails; do not
 guess at credentials or invent a deployment id.
@@ -67,8 +87,8 @@ cube data-model get <deployment> model/views/revenue.yml --branch <branch>
 
 ## Find where something is defined
 
-There is no server-side search. The primitive is to pull every file's content
-in one request and search locally:
+The CLI has no server-side search. The primitive is to pull every file's
+content in one request and search locally:
 
 ```bash
 cube data-model list <deployment> --content --json > /tmp/model.json
@@ -112,8 +132,8 @@ alone is not an answer:
 
 1. **Direct references.** Search the `--content` dump for the field name
    across cubes and views: joins, `sql` expressions, view `includes`.
-2. **View exposure.** Check `cube meta` for whether the field surfaces in a
-   view. A field exposed in a view has downstream consumers you cannot see
+2. **View exposure.** Check `searchDataModel` or `cube meta` for whether the
+   field surfaces in a view. A field exposed in a view has downstream consumers you cannot see
    from the model alone.
 3. **Saved content.** Reports and workbooks reference members by name. Hand
    off to `cube-explore-content` to check saved content before calling a

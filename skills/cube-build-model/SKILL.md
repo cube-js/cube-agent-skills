@@ -1,6 +1,6 @@
 ---
 name: cube-build-model
-description: Author and change a Cube semantic model — add or edit cubes, views, measures, dimensions, joins and pre-aggregations in YAML — using the Cube CLI, on a dev-mode branch, then commit and build. Use whenever someone wants to add a metric, define a measure or dimension, create a cube or view, join two cubes, fix a model error, rename a field, or expose a field to business users. Triggers on "add a metric", "define revenue", "create a view for", "expose this field", "join orders to customers", "fix the model", "add a pre-aggregation". Read the model first with cube-explore-model. To run a query against the result use cube-run-query; to deploy or check build status use cube-deploy.
+description: Author and change a Cube semantic model — add or edit cubes, views, measures, dimensions, joins and pre-aggregations in YAML — on a dev-mode branch through the Cube MCP tools or the Cube CLI, then commit and build. Use whenever someone wants to add a metric, define a measure or dimension, create a cube or view, join two cubes, fix a model error, rename a field, or expose a field to business users. Triggers on "add a metric", "define revenue", "create a view for", "expose this field", "join orders to customers", "fix the model", "add a pre-aggregation". Read the model first with cube-explore-model. To run a query against the result use cube-run-query; to deploy or check build status use cube-deploy.
 license: Apache-2.0
 ---
 
@@ -10,7 +10,33 @@ Writes state. The API rejects file writes on any branch that is not a
 dev-mode branch, so the branch dance below is not optional ceremony — skip it
 and every write fails.
 
-## Preflight
+## Choose the path
+
+**If the Cube MCP tools are available** (this plugin's
+`cube` server or the Cube connector), use them. The loop:
+
+1. `startDataModelEdit` — returns the dev `branchName`. Pass it to every call
+   below and reuse it; calling this again starts a new edit session.
+2. `listDataModelFiles`, `readDataModelFile` — read before you write.
+3. `writeDataModelFile` — whole-file replacement. It recompiles and returns
+   `valid` and any `validationError`; fix and write again until it is valid.
+4. `getDataModelChanges` — review the diff.
+5. `searchDataModel` and `runQuery` with the same `branchName` — confirm the
+   new member is exposed and returns the right number.
+6. `commitDataModelChanges` — until this runs, nobody else can see the work.
+   Name the branch it reports and offer `switchUserBranch`.
+7. `mergeToDefaultBranch` — **only** when the user explicitly asks to
+   publish. It makes the change live for everyone.
+
+For a new pre-aggregation, check it with `getPreAggregationStatus`, then
+`buildPreAggregation` for that one rollup, passing the dev `branchName`. A
+build runs real queries against the warehouse.
+
+Use the CLI path when the MCP tools are not connected, or to deploy a whole
+local project with `cube deploy`. Reading first and the
+[conventions](#conventions) apply to both paths.
+
+## Preflight (CLI)
 
 ```bash
 command -v cube >/dev/null || echo "Cube CLI not installed: curl -fsSL https://raw.githubusercontent.com/cube-js/cube/master/install-cli.sh | sh"
@@ -20,7 +46,8 @@ cube context list   # confirm the tenant before writing anything
 
 ## Read before you write
 
-Never author against an assumed model. Pull the current state first:
+Never author against an assumed model. Pull the current state first — over
+MCP with `listDataModelFiles` and `readDataModelFile`, or with the CLI:
 
 ```bash
 cube data-model list <deployment> --content --json > /tmp/model.json
@@ -66,9 +93,9 @@ cube data-model rename <deployment> model/cubes/old.yml model/cubes/new.yml --br
 cube data-model delete <deployment> model/cubes/dead.yml --branch <dev-branch>
 ```
 
-## Validation is a build, not a linter
+## Validation is a build, not a linter (CLI)
 
-There is no offline validate command. The way to know a change is good is to
+The CLI has no offline validate command. The way to know a change is good is to
 commit it and read the build:
 
 ```bash

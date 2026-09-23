@@ -1,17 +1,41 @@
 ---
 name: cube-run-query
-description: Run queries against a Cube deployment's semantic layer and interpret the results, from the terminal. Use whenever someone wants numbers out of Cube — pull a metric, check a total, compare periods, verify that a measure returns what it should, sanity-check a model change. Triggers on "how many", "what's the total", "show me revenue by month", "did that measure work", "what's our MoM growth", "pull the numbers for", and any request to verify a model change against real data. To find out what is queryable first use cube-explore-model; to change the model use cube-build-model; to save a result as a report or dashboard use cube-build-content.
+description: Run queries against a Cube deployment's semantic layer and interpret the results — through the Cube MCP tools when they are connected, or the Cube CLI from a terminal. Use whenever someone wants numbers out of Cube — pull a metric, check a total, compare periods, verify that a measure returns what it should, sanity-check a model change. Triggers on "how many", "what's the total", "show me revenue by month", "did that measure work", "what's our MoM growth", "pull the numbers for", and any request to verify a model change against real data. To find out what is queryable first use cube-explore-model; to change the model use cube-build-model; to save a result as a report or dashboard use cube-build-content.
 license: Apache-2.0
 ---
 
 # Run a query against Cube
 
-This is the one skill that steps outside the CLI. `cube api` is bound to
-Cube's console API and cannot reach a deployment's query endpoint, so
-querying is two CLI calls to get a URL and a token, then a direct request to
-the deployment.
+## Choose the path
 
-## Preflight
+**If the Cube MCP tools are available, use them.** They come from this
+plugin's `cube` server or the Cube connector — look for `searchDataModel`,
+`runQuery` and `chat`. They need no install or login step, and every call runs
+as the signed-in user, so row-level security applies exactly as in the UI.
+
+- **A specific number:** `searchDataModel` to find the view and the exact
+  member names, then `runQuery` with Cube SQL —
+  `SELECT status, MEASURE(count) FROM orders_view GROUP BY 1`. Never guess a
+  member name.
+- **An open-ended question** ("why did signups drop in March"): `chat`, which
+  runs Cube's own agent over the governed model and existing reports. Give the
+  user the `cubeChatUrl` it returns so they can continue in Cube.
+- **Another deployment:** `listDeployments`, then pass its `deploymentId`.
+- **A dev branch:** pass the same `branchName` to `searchDataModel` and
+  `runQuery`, so the members you find are the ones the query sees.
+- **More than 100 rows:** page `runQuery` with `offset` until `hasMore` is
+  false.
+
+Use the CLI path below when the MCP tools are not connected, or in a script or
+CI job. [Interpreting results](#interpreting-results) applies to both paths.
+
+## CLI path
+
+Querying steps outside the CLI. `cube api` is bound to Cube's console API
+and cannot reach a deployment's query endpoint, so querying is two CLI calls
+to get a URL and a token, then a direct request to the deployment.
+
+### Preflight
 
 ```bash
 command -v cube >/dev/null || echo "Cube CLI not installed: curl -fsSL https://raw.githubusercontent.com/cube-js/cube/master/install-cli.sh | sh"
@@ -22,7 +46,7 @@ cube context list
 `jq` and `curl` are also required here, unlike every other skill in this
 plugin. Check for them and say so if they are missing.
 
-## Get the endpoint and a token
+### Get the endpoint and a token
 
 ```bash
 DEPLOYMENT=<id>
@@ -35,7 +59,7 @@ if you want the wrapping object. The token carries the calling user's
 security context, so row-level security applies exactly as it would in the
 UI — a query here returns what *that user* is allowed to see, not everything.
 
-## Know what you can query first
+### Know what you can query first
 
 Do not guess member names. Ask the compiled model:
 
@@ -47,7 +71,7 @@ Members are `Cube.member` or `View.member`. A dimension that exists on a cube
 but is not exposed in a view is not queryable through that view — `cube meta`
 is what tells you which is which.
 
-## Run it
+### Run it
 
 ```bash
 curl -s "$URL/cubejs-api/v1/load" \
@@ -88,9 +112,10 @@ where a measure's display name and unit live.
 ## Verifying a model change
 
 The common case after `cube-build-model`: query the new measure on the dev
-branch before merging. Point the environment at the branch when getting meta,
-and query the deployment the same way — the token and URL are per-deployment,
-not per-branch.
+branch before merging. Over MCP, pass the dev `branchName` to
+`searchDataModel` and `runQuery`. With the CLI, point the environment at the
+branch when getting meta, and query the deployment the same way — the token
+and URL are per-deployment, not per-branch.
 
 ## When something fails
 

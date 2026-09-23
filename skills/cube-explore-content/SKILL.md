@@ -1,7 +1,7 @@
 ---
 name: cube-explore-content
 description: >-
-  Find and inspect saved content in a Cube workspace — workbooks, dashboards, reports, folders and scheduled notifications — using the Cube CLI. Use whenever someone wants to know what already exists rather than build something new: locate a dashboard, list reports, see what a report queries, find who a notification goes to, or check what saved content references a model field before renaming it. Triggers on "what dashboards do we have", "find the revenue report", "where is that workbook", "what's in this folder", "who gets this scheduled report", "is anything using this field". To create or edit content use cube-build-content; to inspect the semantic model itself use cube-explore-model.
+  Find and inspect saved content in a Cube workspace — workbooks, dashboards, reports, folders and scheduled notifications — using the Cube CLI, or the Cube MCP tools for content you already have a link to. Use whenever someone wants to know what already exists rather than build something new: locate a dashboard, list reports, see what a report queries, find who a notification goes to, or check what saved content references a model field before renaming it. Triggers on "what dashboards do we have", "find the revenue report", "where is that workbook", "what's in this folder", "who gets this scheduled report", "is anything using this field". To create or edit content use cube-build-content; to inspect the semantic model itself use cube-explore-model.
 license: Apache-2.0
 ---
 
@@ -9,6 +9,14 @@ license: Apache-2.0
 
 Read-only. Workbooks, reports, dashboards, folders and notifications — the
 things people made, as opposed to the model underneath them.
+
+## Choose the path
+
+Finding content is a CLI job: the Cube MCP tools cannot list workbooks,
+reports or notifications. They can read one you already have the id of —
+`readWorkbook`, `readReport` — and list folders with `manageFolders`
+(`action: "list"`). With only the MCP tools connected, ask the user for a link
+to the workbook or report, or ask `chat`, which searches existing reports.
 
 ## Preflight
 

@@ -1,0 +1,1 @@
+{"chatId":"c-4412","branchName":null,"cubeChatUrl":"https://acme.cubecloud.dev/chats/c-4412","answer":"Monthly total revenue (orders_view.total_revenue): Mar 2026 $412,300; Apr $438,900 (+6.5%); May $455,100 (+3.7%); Jun $447,800 (−1.6%); Jul $481,200 (+7.5%); Aug $503,600 (+4.7%)."}

@@ -26,6 +26,19 @@ jobs:
         run: |
           python3 -m json.tool .claude-plugin/plugin.json > /dev/null
           python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
+          python3 -m json.tool .mcp.json > /dev/null
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate with Claude Code (strict)
+        # Anthropic's own plugin validator. Needs no login. --strict fails on
+        # unrecognized fields and missing metadata the runtime would tolerate.
+        run: |
+          npx -y @anthropic-ai/claude-code@latest plugin validate --strict .
+          npx -y @anthropic-ai/claude-code@latest plugin validate --strict .claude-plugin/plugin.json
+          npx -y @anthropic-ai/claude-code@latest plugin validate --strict skills
 
       - name: Cross-check against the reference implementation
         # skills-ref is not published to PyPI — it installs from source, so an
