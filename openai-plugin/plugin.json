@@ -1,0 +1,39 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "app-6a833a82850881919fc7816c860984db",
+  "version": "1.1.0",
+  "description": "Use Cube's governed business data through MCP to answer questions, build analytics content, and work with the semantic model.",
+  "author": {
+    "name": "Cube Dev, Inc.",
+    "url": "https://cube.dev"
+  },
+  "homepage": "https://cube.dev",
+  "repository": "https://github.com/cube-js/cube-agent-skills",
+  "license": "Apache-2.0",
+  "keywords": ["cube", "analytics", "semantic-layer", "mcp"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Cube",
+        "shortDescription": "Query governed business data",
+        "longDescription": "Cube connects ChatGPT and Codex to governed business data. Users can explore the semantic model, answer analytical questions with Cube SQL, build and publish dashboards and reports, inspect pre-aggregations, and edit data models on isolated development branches within their existing Cube permissions.",
+        "developerName": "Cube Dev, Inc.",
+        "category": "Business & Operations",
+        "websiteURL": "https://cube.dev/",
+        "supportURL": "https://docs.cube.dev/docs/integrations/mcp-server",
+        "privacyPolicyURL": "https://cube.dev/legal/privacy-policy",
+        "termsOfServiceURL": "https://cube.dev/legal/terms-of-use",
+        "defaultPrompt": [
+          "Use Cube to show revenue by product category for the last complete quarter.",
+          "Use Cube to find the revenue measure and explain how it is defined.",
+          "Use Cube to save a verified query as a report in a workbook."
+        ],
+        "composerIcon": "./assets/cube-icon.png",
+        "logo": "./assets/cube-icon.png"
+      },
+      "publication": {
+        "release_notes": "Adds five MCP-backed Cube skills for model exploration, governed queries, analytics content, semantic model edits, and Cube agent configuration."
+      }
+    }
+  }
+}
