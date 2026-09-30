@@ -20,13 +20,17 @@ jobs:
           python-version: "3.12"
 
       - name: Validate skill frontmatter
-        run: python3 scripts/validate-skills.py
+        run: |
+          python3 scripts/validate-skills.py
+          python3 scripts/validate-skills.py openai-plugin/skills
 
       - name: Validate plugin manifests are well-formed JSON
         run: |
           python3 -m json.tool .claude-plugin/plugin.json > /dev/null
           python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
           python3 -m json.tool .mcp.json > /dev/null
+          python3 -m json.tool openai-plugin/plugin.json > /dev/null
+          python3 -m json.tool openai-plugin/mcp.json > /dev/null
 
       - uses: actions/setup-node@v4
         with:

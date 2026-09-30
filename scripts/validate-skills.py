@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate every skill in skills/ against the Agent Skills specification.
+"""Validate a skills directory against the Agent Skills specification.
 
 Deliberately dependency-free: CI's primary gate must not break because an
 upstream tool moved. `skills-ref` runs alongside this in CI as a second
@@ -14,7 +14,8 @@ import re
 import sys
 from pathlib import Path
 
-SKILLS_DIR = Path(__file__).resolve().parent.parent / "skills"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SKILLS_DIR = REPO_ROOT / "skills"
 
 # Spec limits.
 MAX_NAME = 64
@@ -77,7 +78,7 @@ def parse_frontmatter(text: str, where: str) -> dict[str, str] | None:
 
 
 def check(skill_dir: Path) -> None:
-    where = f"skills/{skill_dir.name}"
+    where = skill_dir.relative_to(REPO_ROOT).as_posix()
     skill_md = skill_dir / "SKILL.md"
 
     if not skill_md.is_file():
@@ -129,13 +130,18 @@ def check(skill_dir: Path) -> None:
 
 
 def main() -> int:
-    if not SKILLS_DIR.is_dir():
-        print(f"error: no skills directory at {SKILLS_DIR}", file=sys.stderr)
+    if len(sys.argv) > 2:
+        print("usage: validate-skills.py [skills-directory]", file=sys.stderr)
+        return 2
+
+    skills_dir = (REPO_ROOT / sys.argv[1]).resolve() if len(sys.argv) == 2 else SKILLS_DIR
+    if not skills_dir.is_dir():
+        print(f"error: no skills directory at {skills_dir}", file=sys.stderr)
         return 1
 
-    skill_dirs = sorted(d for d in SKILLS_DIR.iterdir() if d.is_dir())
+    skill_dirs = sorted(d for d in skills_dir.iterdir() if d.is_dir())
     if not skill_dirs:
-        print(f"error: {SKILLS_DIR} contains no skills", file=sys.stderr)
+        print(f"error: {skills_dir} contains no skills", file=sys.stderr)
         return 1
 
     for skill_dir in skill_dirs:

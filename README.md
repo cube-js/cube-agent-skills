@@ -4,6 +4,12 @@ The official [Cube](https://cube.dev) plugin for Claude, plus skills for Cursor,
 OpenAI Codex, GitHub Copilot, Gemini CLI, and other
 [Agent Skills](https://agentskills.io) compatible agents.
 
+The `openai-plugin/` directory is the package source for the public Cube plugin
+in ChatGPT and Codex. It connects the same hosted MCP server and includes five
+MCP-backed workflows adapted from this repository. The CLI-only administration,
+embedding, and deployment workflows stay in the coding-agent skills below;
+they are not bundled in the public OpenAI plugin.
+
 Ask questions of your governed semantic layer, explore and build the model,
 create dashboards, administer access, and ship deployments — from the agent you
 already work in.
