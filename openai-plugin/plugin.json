@@ -24,9 +24,9 @@
         "privacyPolicyURL": "https://cube.dev/legal/privacy-policy",
         "termsOfServiceURL": "https://cube.dev/legal/terms-of-use",
         "defaultPrompt": [
-          "Use Cube to show revenue by product category for the last complete quarter.",
-          "Use Cube to find the revenue measure and explain how it is defined.",
-          "Use Cube to save a verified query as a report in a workbook."
+          "Show revenue by product category for the last complete quarter.",
+          "Find the revenue measure and explain how it is defined.",
+          "Create a workbook with a revenue-by-category bar chart for the last complete quarter."
         ],
         "composerIcon": "./assets/cube-icon.png",
         "logo": "./assets/cube-icon.png"
